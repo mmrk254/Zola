@@ -1,0 +1,224 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, ChevronRight, Save } from "lucide-react";
+import { Shell } from "@/components/shell";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { demoHospitals } from "@/lib/demo-data";
+
+const CONSENT_ITEMS = [
+  "Patient or legal representative has been informed of the referral.",
+  "Clinical information is accurate and limited to what is necessary.",
+  "Receiving facility may view referral details after acceptance.",
+  "Next-of-kin contact details are correct, where available."
+];
+
+export default function NewReferral() {
+  const router = useRouter();
+  const [hospitals, setHospitals] = useState(demoHospitals);
+  const [consent, setConsent] = useState([false, false, false, false]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState<{ id: string; reference: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [form, setForm] = useState({
+    patient_initials: "",
+    care_level: "",
+    urgency: "urgent",
+    referring_facility_id: "",
+    clinical_summary: ""
+  });
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    fetch("/api/hospitals")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.hospitals?.length) {
+          setHospitals(data.hospitals);
+          setForm((f) => ({ ...f, referring_facility_id: data.hospitals[0].id }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!isSupabaseConfigured) {
+      setError("Connect Supabase to save real referrals. This form is read-only in demo mode.");
+      return;
+    }
+    if (!form.care_level || !form.referring_facility_id) {
+      setError("Select a care level and referring facility.");
+      return;
+    }
+    if (!consent.every(Boolean)) {
+      setError("All four consent checks must be confirmed before saving.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const createRes = await fetch("/api/referrals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      const created = await createRes.json();
+      if (!createRes.ok) throw new Error(created.error ?? "Could not create referral");
+
+      const consentRes = await fetch(`/api/referrals/${created.referral.id}/consent`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checks: consent })
+      });
+      const consented = await consentRes.json();
+      if (!consentRes.ok) throw new Error(consented.error ?? "Could not confirm consent");
+
+      setSubmitted({ id: created.referral.id, reference: created.referral.reference });
+    } catch (err: any) {
+      setError(err.message ?? "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Shell title="Create referral">
+      <div className="breadcrumb">
+        <Link href="/dashboard">Dashboard</Link>
+        <ChevronRight size={14} /> New referral
+      </div>
+
+      {submitted ? (
+        <section className="success-card">
+          <CheckCircle2 />
+          <h2>Referral {submitted.reference} saved</h2>
+          <p>
+            Consent is confirmed and the referral is ready to send. Open it to broadcast it to
+            hospitals.
+          </p>
+          <Link className="button" href={`/referrals/${submitted.id}`}>
+            Open referral
+          </Link>
+        </section>
+      ) : (
+        <form onSubmit={submit} className="referral-form">
+          {!isSupabaseConfigured && (
+            <div className="notice warn">
+              Demo mode: connect Supabase to save real referrals from this form.
+            </div>
+          )}
+          {error && <div className="notice error">{error}</div>}
+
+          <section className="form-card">
+            <div className="form-heading">
+              <span>01</span>
+              <div>
+                <h2>Clinical referral details</h2>
+                <p>Use minimum necessary information while matching a bed.</p>
+              </div>
+            </div>
+            <div className="form-grid">
+              <label>
+                Patient initials
+                <input
+                  required
+                  placeholder="e.g. JM"
+                  maxLength={4}
+                  value={form.patient_initials}
+                  onChange={(e) => setForm((f) => ({ ...f, patient_initials: e.target.value.toUpperCase() }))}
+                />
+              </label>
+              <label>
+                Care level
+                <select
+                  required
+                  value={form.care_level}
+                  onChange={(e) => setForm((f) => ({ ...f, care_level: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select required care level
+                  </option>
+                  <option value="ICU">ICU</option>
+                  <option value="HDU">HDU</option>
+                  <option value="NICU">NICU</option>
+                </select>
+              </label>
+              <label>
+                Urgency
+                <select value={form.urgency} onChange={(e) => setForm((f) => ({ ...f, urgency: e.target.value }))}>
+                  <option value="critical">Critical</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="routine">Routine</option>
+                </select>
+              </label>
+              <label>
+                Referring facility
+                <select
+                  required
+                  value={form.referring_facility_id}
+                  onChange={(e) => setForm((f) => ({ ...f, referring_facility_id: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Select facility
+                  </option>
+                  {hospitals.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="full">
+                Clinical summary
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Briefly describe the reason for referral and immediate care requirement."
+                  value={form.clinical_summary}
+                  onChange={(e) => setForm((f) => ({ ...f, clinical_summary: e.target.value }))}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="form-card">
+            <div className="form-heading">
+              <span>02</span>
+              <div>
+                <h2>Consent checkpoint</h2>
+                <p>All confirmations are required before the referral can be sent.</p>
+              </div>
+            </div>
+            <div className="checklist">
+              {CONSENT_ITEMS.map((text, i) => (
+                <label key={text} className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={consent[i]}
+                    onChange={(e) => setConsent((v) => v.map((x, j) => (j === i ? e.target.checked : x)))}
+                  />
+                  <span>{text}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <div className="form-actions">
+            <Link href="/dashboard" className="button ghost">
+              Cancel
+            </Link>
+            <button className="button" type="submit" disabled={submitting}>
+              <Save size={16} /> {submitting ? "Saving..." : "Save referral"}
+            </button>
+          </div>
+        </form>
+      )}
+    </Shell>
+  );
+}
