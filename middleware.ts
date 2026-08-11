@@ -37,10 +37,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set({ name, value, ...options })
-          );
-          response.headers.set("Set-Cookie", request.cookies.toString());
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options });
+            response.cookies.set({ name, value, ...options });
+          });
         }
       }
     }
