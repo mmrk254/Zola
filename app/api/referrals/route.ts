@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
 import { nextReference } from "@/lib/referral-state-machine";
+import { requireHospitalAccess } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
+  try {
+    const userContext = await requireHospitalAccess(request.nextUrl.searchParams.get("hospital_id") ?? "", ["clinician", "hospital_staff", "hospital_admin"]);
+    if (!userContext) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
+  }
+
   const supabase = getServiceClient();
   const status = request.nextUrl.searchParams.get("status");
   const hospitalId = request.nextUrl.searchParams.get("hospital_id");
@@ -21,6 +31,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    const authContext = await requireHospitalAccess("", ["clinician", "hospital_staff", "hospital_admin"]);
+    if (!authContext) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
+  }
+
   const supabase = getServiceClient();
   const body = await request.json();
 

@@ -27,14 +27,27 @@ create table hospitals (
   created_at timestamptz not null default now()
 );
 
+create type hospital_membership_role as enum ('clinician', 'hospital_staff', 'hospital_admin');
+create type hospital_membership_status as enum ('active', 'revoked');
+
 create table users (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
-  role text not null check (role in ('clinician', 'hospital_staff', 'administrator')),
-  hospital_id uuid references hospitals(id),
+  email text not null unique,
   phone text,
-  email text,
+  network_admin boolean not null default false,
   created_at timestamptz not null default now()
+);
+
+create table hospital_memberships (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  hospital_id uuid not null references hospitals(id) on delete cascade,
+  role hospital_membership_role not null,
+  status hospital_membership_status not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, hospital_id)
 );
 
 create table referral_cases (
@@ -44,6 +57,7 @@ create table referral_cases (
   care_level care_level not null,
   urgency urgency_level not null default 'urgent',
   status referral_status not null default 'draft',
+  created_by uuid references users(id),
   referring_facility_id uuid not null references hospitals(id),
   receiving_facility_id uuid references hospitals(id),
   clinical_summary text,
@@ -58,6 +72,7 @@ create table referral_events (
   from_status referral_status,
   to_status referral_status not null,
   actor_user_id uuid references users(id),
+  facility_id uuid references hospitals(id),
   created_at timestamptz not null default now()
 );
 
@@ -80,6 +95,7 @@ create index on referral_events (referral_case_id);
 -- key (which bypasses RLS), so the browser (anon key) gets read-only access.
 alter table hospitals enable row level security;
 alter table users enable row level security;
+alter table hospital_memberships enable row level security;
 alter table referral_cases enable row level security;
 alter table referral_events enable row level security;
 alter table family_confirmations enable row level security;
@@ -87,6 +103,7 @@ alter table family_confirmations enable row level security;
 create policy "Public read access" on hospitals for select using (true);
 create policy "Public read access" on referral_cases for select using (true);
 create policy "Public read access" on referral_events for select using (true);
+create policy "Hospital membership read access" on hospital_memberships for select using (true);
 
 -- Seed two hospitals so the app has something to reference on first run.
 insert into hospitals (name, type) values
