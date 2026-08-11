@@ -49,8 +49,7 @@ export async function transitionReferral(
   await supabase.from("referral_events").insert({
     referral_case_id: id,
     from_status: current.status,
-    to_status: toStatus,
-    facility_id: current.referring_facility_id ?? current.receiving_facility_id ?? null
+    to_status: toStatus
   });
 
   return { referral, status: 200 as const };

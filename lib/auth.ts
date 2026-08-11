@@ -20,11 +20,35 @@ export async function getCurrentUserContext(): Promise<AuthenticatedUserContext 
     if (error || !user) return null;
 
     const service = getServiceClient();
-    const { data: profile } = await service
+    const { data: modernProfile, error: modernProfileError } = await service
       .from("users")
       .select("network_admin")
       .eq("id", user.id)
       .maybeSingle();
+
+    // The existing production project predates hospital_memberships and uses
+    // users.role/users.hospital_id. Support both layouts while it is migrated.
+    if (modernProfileError) {
+      const { data: legacyProfile, error: legacyProfileError } = await service
+        .from("users")
+        .select("role, hospital_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (legacyProfileError || !legacyProfile) return null;
+
+      const legacyRole = legacyProfile.role as ActiveMembership["role"] | "network_admin" | "admin";
+      const networkAdmin = legacyRole === "network_admin" || legacyRole === "admin";
+      const memberships: ActiveMembership[] = legacyProfile.hospital_id && !networkAdmin
+        ? [{ hospital_id: legacyProfile.hospital_id, role: legacyRole as ActiveMembership["role"], status: "active" }]
+        : [];
+
+      return {
+        user: { id: user.id, email: user.email },
+        networkAdmin,
+        memberships
+      };
+    }
 
     const { data: memberships } = await service
       .from("hospital_memberships")
@@ -34,7 +58,7 @@ export async function getCurrentUserContext(): Promise<AuthenticatedUserContext 
 
     return {
       user: { id: user.id, email: user.email },
-      networkAdmin: Boolean(profile?.network_admin),
+      networkAdmin: Boolean(modernProfile?.network_admin),
       memberships: (memberships ?? []) as ActiveMembership[]
     };
   } catch {

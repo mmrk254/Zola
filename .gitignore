@@ -7,5 +7,5 @@ out
 .vercel
 *.tsbuildinfo
 .DS_Store
-
-.vercel
+dev-server*.log
+supabase/.temp
