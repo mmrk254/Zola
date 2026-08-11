@@ -9,10 +9,19 @@ export async function middleware(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const hasValidSupabaseUrl = (() => {
+    if (!supabaseUrl) return false;
+    try {
+      const parsed = new URL(supabaseUrl);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch {
+      return false;
+    }
+  })();
 
   // Vercel runs middleware before a page can render. Do not crash the entire
   // site while Supabase variables are being configured for a deployment.
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!hasValidSupabaseUrl || !supabaseAnonKey) {
     if (isProtected) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
