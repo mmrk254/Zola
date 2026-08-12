@@ -68,6 +68,13 @@ async function main() {
   }
 
   console.log("Supabase bootstrap complete.");
+
+  const { error: appTableError } = await supabase.from("hospital_applications").select("id").limit(1);
+  if (appTableError) {
+    console.log("Note: run supabase/migrations/202608120003_hospital_applications.sql for hospital registration.");
+  } else {
+    console.log("hospital_applications table is ready.");
+  }
 }
 
 main().catch((error) => {

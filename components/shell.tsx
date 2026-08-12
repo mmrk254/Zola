@@ -12,29 +12,21 @@ import {
   ClipboardPlus,
   LayoutDashboard,
   Menu,
-  Users,
   X
 } from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
-import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
-  { href: "/inbox", label: "Hospital inbox", icon: Building2 },
-  { href: "/staff", label: "Staff", icon: Users, adminOnly: true }
+  { href: "/inbox", label: "Hospital inbox", icon: Building2 }
 ];
 
 function SideNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { session } = useWorkspace();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-
-  const isAdmin =
-    session?.networkAdmin ||
-    session?.memberships.some((m) => m.role === "hospital_admin" && m.status === "active");
 
   return (
     <>
@@ -43,7 +35,7 @@ function SideNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: 
       </Link>
       {!collapsed && <p className="side-label">OPERATIONS</p>}
       <nav className="side-nav">
-        {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
+        {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
             href={item.href}

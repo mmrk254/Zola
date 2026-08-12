@@ -1,43 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BedDouble,
-  Building2,
-  ClipboardPlus,
-  Clock3,
-  Inbox,
-  Plus,
-  RadioTower,
-  Users
-} from "lucide-react";
+import { ArrowRight, BedDouble, Clock3, Plus, RadioTower } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { StatusBadge } from "@/components/status-badge";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { demoReferrals } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
-import { Referral, ReferralStatus } from "@/lib/types";
-
-const PIPELINE: { status: ReferralStatus; label: string }[] = [
-  { status: "searching", label: "Searching" },
-  { status: "hospital_accepted", label: "Accepted" },
-  { status: "family_confirmed", label: "Family OK" },
-  { status: "patient_en_route", label: "En route" },
-  { status: "patient_received", label: "Received" }
-];
+import { Referral } from "@/lib/types";
 
 export default function Dashboard() {
-  const { session, activeHospitalId } = useWorkspace();
+  const { activeHospitalId } = useWorkspace();
   const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [errored, setErrored] = useState(false);
-
-  const isAdmin =
-    session?.networkAdmin ||
-    session?.memberships.some((m) => m.role === "hospital_admin" && m.status === "active");
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -62,17 +40,6 @@ export default function Dashboard() {
 
   const active = referrals.filter((r) => !["closed", "draft"].includes(r.status));
   const awaitingBed = referrals.filter((r) => ["searching", "ready_to_send"].includes(r.status)).length;
-  const critical = referrals.filter((r) => r.urgency === "critical" && r.status !== "closed").length;
-  const inboxCount = referrals.filter((r) => r.status === "searching").length;
-
-  const pipelineCounts = useMemo(() => {
-    return PIPELINE.map((step) => ({
-      ...step,
-      count: referrals.filter((r) => r.status === step.status).length
-    }));
-  }, [referrals]);
-
-  const recent = [...referrals].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 5);
 
   return (
     <Shell
@@ -84,19 +51,6 @@ export default function Dashboard() {
       }
     >
       <FacilityRequiredNotice />
-
-      {session?.user?.name && (
-        <section className="welcome-strip">
-          <div>
-            <p className="eyebrow">Welcome back</p>
-            <h2>{session.user.name}</h2>
-          </div>
-          <div className="welcome-meta">
-            <span>{session.memberships[0]?.hospital_name ?? "Network workspace"}</span>
-            <span className="role-pill">{session.memberships[0]?.role?.replace("_", " ") ?? "admin"}</span>
-          </div>
-        </section>
-      )}
 
       {!isSupabaseConfigured && (
         <div className="notice warn">
@@ -111,65 +65,22 @@ export default function Dashboard() {
         </div>
       )}
 
-      <section className="quick-actions">
-        <Link href="/referrals/new" className="quick-action">
-          <ClipboardPlus size={18} />
-          <span>New referral</span>
-        </Link>
-        <Link href="/inbox" className="quick-action">
-          <Inbox size={18} />
-          <span>Inbox {inboxCount > 0 && <em>{inboxCount}</em>}</span>
-        </Link>
-        {isAdmin && (
-          <Link href="/staff" className="quick-action">
-            <Users size={18} />
-            <span>Staff accounts</span>
-          </Link>
-        )}
-        <Link href="/inbox" className="quick-action">
-          <Building2 size={18} />
-          <span>Bed requests</span>
-        </Link>
-      </section>
-
-      <section className="metrics compact-metrics">
+      <section className="metrics compact-metrics ops-metrics">
         <article>
           <div className="metric-icon"><RadioTower /></div>
-          <p>Active</p>
+          <p>Active referrals</p>
           <strong>{loading ? "..." : active.length}</strong>
         </article>
         <article>
           <div className="metric-icon amber"><Clock3 /></div>
-          <p>Awaiting bed</p>
+          <p>Awaiting a bed</p>
           <strong>{loading ? "..." : awaitingBed}</strong>
         </article>
         <article>
-          <div className="metric-icon red"><BedDouble /></div>
-          <p>Critical</p>
-          <strong>{loading ? "..." : critical}</strong>
+          <div className="metric-icon green"><BedDouble /></div>
+          <p>Care levels</p>
+          <strong>ICU · HDU · NICU</strong>
         </article>
-        <article>
-          <div className="metric-icon green"><Building2 /></div>
-          <p>In inbox</p>
-          <strong>{loading ? "..." : inboxCount}</strong>
-        </article>
-      </section>
-
-      <section className="pipeline-bar panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Referral pipeline</h2>
-            <p>Live counts across coordination stages</p>
-          </div>
-        </div>
-        <div className="pipeline-track">
-          {pipelineCounts.map((step) => (
-            <div key={step.status} className="pipeline-step">
-              <strong>{step.count}</strong>
-              <span>{step.label}</span>
-            </div>
-          ))}
-        </div>
       </section>
 
       <section className="panel">
@@ -179,15 +90,15 @@ export default function Dashboard() {
             <p>Cases requiring active coordination</p>
           </div>
           <Link href="/referrals/new" className="text-link">
-            Create <ArrowRight size={14} />
+            Create referral <ArrowRight size={14} />
           </Link>
         </div>
 
         <div className="referral-cards mobile-only">
-          {recent.length === 0 && !loading ? (
+          {referrals.length === 0 && !loading ? (
             <p className="empty-state">No referrals yet.</p>
           ) : (
-            recent.map((r) => (
+            referrals.map((r) => (
               <Link key={r.id} href={`/referrals/${r.id}`} className="referral-card">
                 <div className="referral-card-top">
                   <strong>{r.reference}</strong>
@@ -203,7 +114,7 @@ export default function Dashboard() {
         </div>
 
         <div className="table-wrap desktop-only">
-          {recent.length === 0 && !loading ? (
+          {referrals.length === 0 && !loading ? (
             <p className="empty-state">No referrals yet. Create the first one to get started.</p>
           ) : (
             <table>
@@ -218,7 +129,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recent.map((r) => (
+                {referrals.map((r) => (
                   <tr key={r.id}>
                     <td>
                       <Link href={`/referrals/${r.id}`} className="ref-link">

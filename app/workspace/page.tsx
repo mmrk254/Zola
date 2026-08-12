@@ -3,22 +3,13 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Activity,
-  ArrowRight,
-  Building2,
-  ChevronRight,
-  ClipboardPlus,
-  LogIn,
-  ShieldCheck,
-  UserPlus
-} from "lucide-react";
+import { Activity, ArrowRight, Building2, LogIn, ShieldCheck } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 
 const PATHS = [
-  { step: "01", title: "Hospital joins", text: "A facility registers and is approved onto the network." },
-  { step: "02", title: "Admin provisions staff", text: "Hospital admins create accounts for clinicians and coordination staff." },
-  { step: "03", title: "Staff sign in", text: "Each member signs in with their facility role and begins referrals." }
+  { step: "01", title: "Register", text: "Submit your hospital for network approval." },
+  { step: "02", title: "Get approved", text: "The platform team activates your admin account." },
+  { step: "03", title: "Provision staff", text: "Create accounts for your referral team from the hospital dashboard." }
 ];
 
 export default function WorkspacePage() {
@@ -26,8 +17,13 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace("/dashboard");
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const me = await fetch("/api/me").then((r) => r.json());
+      const isAdmin =
+        me.networkAdmin ||
+        me.memberships?.some((m: { role: string }) => m.role === "hospital_admin");
+      if (isAdmin) router.replace("/workspace/dashboard");
     });
   }, [router]);
 
@@ -46,43 +42,32 @@ export default function WorkspacePage() {
         <p className="marketing-eyebrow">
           <span className="live-dot" /> Hospital workspace
         </p>
-        <h1>Where your facility runs referrals.</h1>
+        <h1>Administration portal for your facility.</h1>
         <p>
-          Sign in if your hospital is already on Zola, or register to request access. Once approved, your admin can
-          provision staff accounts for nurses, clinicians, and coordination teams.
+          Register your hospital or sign in as an administrator. From here you manage staff accounts, facility settings,
+          and oversee referrals across your hospital.
         </p>
       </section>
 
       <section className="workspace-hub-cards">
-        <Link href="/login" className="hub-card hub-card-primary">
+        <Link href="/workspace/login" className="hub-card hub-card-primary">
           <span className="hub-card-icon">
             <LogIn size={20} />
           </span>
           <div>
             <h2>Hospital sign in</h2>
-            <p>For staff with an existing account at a participating facility.</p>
+            <p>For facility administrators with an approved account.</p>
           </div>
           <ArrowRight size={18} className="hub-card-arrow" />
         </Link>
 
-        <Link href="/register" className="hub-card">
+        <Link href="/workspace/register" className="hub-card">
           <span className="hub-card-icon teal">
             <Building2 size={20} />
           </span>
           <div>
             <h2>Register a hospital</h2>
-            <p>Request network access for your facility. Approval is handled by the platform team.</p>
-          </div>
-          <ArrowRight size={18} className="hub-card-arrow" />
-        </Link>
-
-        <Link href="/login?next=/referrals/new" className="hub-card">
-          <span className="hub-card-icon amber">
-            <ClipboardPlus size={20} />
-          </span>
-          <div>
-            <h2>Create a referral</h2>
-            <p>Clinicians sign in and go straight to the referral form.</p>
+            <p>Request network access. Approval required before activation.</p>
           </div>
           <ArrowRight size={18} className="hub-card-arrow" />
         </Link>
@@ -91,7 +76,7 @@ export default function WorkspacePage() {
       <section className="workspace-hub-steps">
         <div className="workspace-hub-steps-head">
           <ShieldCheck size={18} />
-          <h2>How hospital access works</h2>
+          <h2>How it works</h2>
         </div>
         <div className="workspace-steps-grid">
           {PATHS.map((item) => (
@@ -102,16 +87,9 @@ export default function WorkspacePage() {
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="workspace-hub-admin">
-        <div>
-          <h3>Already inside the workspace?</h3>
-          <p>Go to your operations dashboard to manage referrals, inbox, and staff.</p>
-        </div>
-        <Link href="/login?next=/dashboard" className="button">
-          Open dashboard <ChevronRight size={16} />
-        </Link>
+        <p className="workspace-staff-note">
+          Clinical staff do not sign in here. They use <Link href="/login?next=/referrals/new">Create a referral</Link> on the homepage.
+        </p>
       </section>
     </main>
   );

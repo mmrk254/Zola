@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import { StaffAuthLayout } from "@/components/staff-auth-layout";
+import { HospitalAuthLayout } from "@/components/hospital-auth-layout";
 import { supabase } from "@/lib/supabase/client";
 
-function StaffLoginForm() {
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
-
+export default function WorkspaceLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,26 +32,17 @@ function StaffLoginForm() {
       return;
     }
 
-    window.location.assign(next.startsWith("/") ? next : "/dashboard");
+    window.location.assign("/workspace/dashboard");
   }
 
   return (
-    <StaffAuthLayout
-      title="Staff sign in"
-      subtitle="Sign in with the credentials your hospital admin gave you to create and manage referrals."
-    >
+    <HospitalAuthLayout title="Hospital sign in" subtitle="Administrator access to your facility workspace.">
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
         <label className="auth-field">
-          <span>Email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@hospital.org"
-            required
-          />
+          <span>Admin email</span>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@hospital.org" required />
         </label>
 
         <label className="auth-field">
@@ -68,34 +55,24 @@ function StaffLoginForm() {
               placeholder="Enter your password"
               required
             />
-            <button
-              type="button"
-              className="auth-eye"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label="Toggle password"
-            >
+            <button type="button" className="auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label="Toggle password">
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </label>
 
-        <button type="submit" disabled={loading} className="button auth-submit staff-submit">
-          {loading ? "Signing in..." : "Continue to referrals"}
+        <button type="submit" disabled={loading} className="button auth-submit">
+          {loading ? "Signing in..." : "Open hospital dashboard"}
           {!loading && <ArrowRight size={16} />}
         </button>
       </form>
 
       <p className="auth-footnote">
-        Hospital administrator? <Link href="/workspace">Open the hospital workspace</Link>
+        New facility? <Link href="/workspace/register">Register your hospital</Link>
       </p>
-    </StaffAuthLayout>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="auth-loading">Loading...</div>}>
-      <StaffLoginForm />
-    </Suspense>
+      <p className="auth-footnote subtle">
+        <Link href="/workspace">Back to workspace</Link>
+      </p>
+    </HospitalAuthLayout>
   );
 }

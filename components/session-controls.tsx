@@ -6,7 +6,13 @@ import { supabase } from "@/lib/supabase/client";
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
-export function SessionControls({ collapsed = false }: { collapsed?: boolean }) {
+export function SessionControls({
+  collapsed = false,
+  redirectTo = "/login"
+}: {
+  collapsed?: boolean;
+  redirectTo?: string;
+}) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef(Date.now());
   const signingOutRef = useRef(false);
@@ -21,9 +27,9 @@ export function SessionControls({ collapsed = false }: { collapsed?: boolean }) 
     try {
       await supabase?.auth.signOut();
     } finally {
-      window.location.assign("/login");
+      window.location.assign(redirectTo);
     }
-  }, []);
+  }, [redirectTo]);
 
   useEffect(() => {
     const resetTimer = () => {
