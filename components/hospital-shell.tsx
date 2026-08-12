@@ -93,16 +93,19 @@ export function HospitalShell({
   }
 
   return (
-    <div className={`app-shell hospital-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={`app-shell hospital-shell ${collapsed ? "sidebar-collapsed" : ""} ${drawerOpen ? "drawer-open" : ""}`}>
       <aside className="desktop-aside hospital-aside">
         <Nav collapsed={collapsed} />
       </aside>
 
-      {drawerOpen && (
-        <button className="mobile-drawer-backdrop" aria-label="Close" onClick={() => setDrawerOpen(false)} />
-      )}
+      <button
+        className="mobile-drawer-backdrop"
+        aria-label="Close"
+        onClick={() => setDrawerOpen(false)}
+        tabIndex={drawerOpen ? 0 : -1}
+      />
 
-      <aside className={`mobile-drawer ${drawerOpen ? "open" : ""}`}>
+      <aside className="mobile-drawer" aria-hidden={!drawerOpen}>
         <button className="drawer-close" type="button" onClick={() => setDrawerOpen(false)}>
           <X size={18} />
         </button>

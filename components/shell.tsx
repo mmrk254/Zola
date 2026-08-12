@@ -89,16 +89,19 @@ export function Shell({
   }
 
   return (
-    <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""} ${drawerOpen ? "drawer-open" : ""}`}>
       <aside className="desktop-aside">
         <SideNav collapsed={collapsed} />
       </aside>
 
-      {drawerOpen && (
-        <button className="mobile-drawer-backdrop" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} />
-      )}
+      <button
+        className="mobile-drawer-backdrop"
+        aria-label="Close navigation"
+        onClick={() => setDrawerOpen(false)}
+        tabIndex={drawerOpen ? 0 : -1}
+      />
 
-      <aside className={`mobile-drawer ${drawerOpen ? "open" : ""}`} aria-hidden={!drawerOpen}>
+      <aside className="mobile-drawer" aria-hidden={!drawerOpen}>
         <button className="drawer-close" type="button" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
           <X size={18} />
         </button>

@@ -2,25 +2,34 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { HospitalAuthLayout } from "@/components/hospital-auth-layout";
 
 export default function WorkspaceRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     hospital_name: "",
     admin_name: "",
     admin_email: "",
     phone: "",
-    hospital_type: "referring"
+    hospital_type: "referring",
+    password: "",
+    confirm_password: ""
   });
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (form.password !== form.confirm_password) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/hospitals/register", {
@@ -29,7 +38,7 @@ export default function WorkspaceRegisterPage() {
         body: JSON.stringify(form)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not submit application");
+      if (!res.ok) throw new Error(data.error ?? "Could not register hospital");
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message ?? "Something went wrong");
@@ -40,15 +49,15 @@ export default function WorkspaceRegisterPage() {
 
   if (submitted) {
     return (
-      <HospitalAuthLayout title="Application received" subtitle="Your hospital registration is with the platform team." variant="register">
+      <HospitalAuthLayout title="Hospital registered" subtitle="Your administrator account is ready." variant="register">
         <div className="auth-success">
           <CheckCircle2 size={40} />
           <p>
-            We received your request for <b>{form.hospital_name}</b>. A network administrator will review it and contact{" "}
-            <b>{form.admin_email}</b> with login credentials.
+            <b>{form.hospital_name}</b> is on the network. Sign in with <b>{form.admin_email}</b> and the password you
+            just created.
           </p>
-          <Link href="/workspace" className="button auth-submit">
-            Back to workspace
+          <Link href="/workspace/login" className="button auth-submit">
+            Sign in to hospital dashboard
           </Link>
         </div>
       </HospitalAuthLayout>
@@ -58,7 +67,7 @@ export default function WorkspaceRegisterPage() {
   return (
     <HospitalAuthLayout
       title="Register a hospital"
-      subtitle="Request access to the Zola referral network. Approval is required before your admin account is activated."
+      subtitle="Create your facility and administrator account on the Zola network."
       variant="register"
     >
       {error && <div className="auth-error">{error}</div>}
@@ -114,14 +123,43 @@ export default function WorkspaceRegisterPage() {
           />
         </label>
 
+        <label className="auth-field">
+          <span>Admin password</span>
+          <div className="auth-password">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={8}
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              placeholder="Minimum 8 characters"
+            />
+            <button type="button" className="auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label="Toggle password">
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </label>
+
+        <label className="auth-field">
+          <span>Confirm password</span>
+          <input
+            type={showPassword ? "text" : "password"}
+            required
+            minLength={8}
+            value={form.confirm_password}
+            onChange={(e) => setForm((f) => ({ ...f, confirm_password: e.target.value }))}
+            placeholder="Repeat password"
+          />
+        </label>
+
         <button type="submit" disabled={loading} className="button auth-submit">
-          {loading ? "Submitting..." : "Submit application"}
+          {loading ? "Creating account..." : "Create hospital account"}
           {!loading && <ArrowRight size={16} />}
         </button>
       </form>
 
       <p className="auth-footnote">
-        Already approved? <Link href="/workspace/login">Sign in to your hospital dashboard</Link>
+        Already registered? <Link href="/workspace/login">Sign in to your hospital dashboard</Link>
       </p>
     </HospitalAuthLayout>
   );

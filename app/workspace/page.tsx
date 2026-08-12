@@ -7,9 +7,9 @@ import { Activity, ArrowRight, Building2, LogIn, ShieldCheck } from "lucide-reac
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 
 const PATHS = [
-  { step: "01", title: "Register", text: "Submit your hospital for network approval." },
-  { step: "02", title: "Get approved", text: "The platform team activates your admin account." },
-  { step: "03", title: "Provision staff", text: "Create accounts for your referral team from the hospital dashboard." }
+  { step: "01", title: "Register", text: "Create your hospital and set an administrator password." },
+  { step: "02", title: "Sign in", text: "Open the hospital dashboard with your admin credentials." },
+  { step: "03", title: "Add staff", text: "Create accounts for clinicians and coordination staff." }
 ];
 
 export default function WorkspacePage() {
@@ -67,7 +67,7 @@ export default function WorkspacePage() {
           </span>
           <div>
             <h2>Register a hospital</h2>
-            <p>Request network access. Approval required before activation.</p>
+            <p>Create your facility account and administrator password.</p>
           </div>
           <ArrowRight size={18} className="hub-card-arrow" />
         </Link>

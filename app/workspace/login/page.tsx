@@ -32,11 +32,21 @@ export default function WorkspaceLoginPage() {
       return;
     }
 
+    const verify = await fetch("/api/workspace/verify");
+    const data = await verify.json();
+
+    if (!verify.ok) {
+      await supabase.auth.signOut();
+      setError(data.error ?? "Hospital administrator access only.");
+      setLoading(false);
+      return;
+    }
+
     window.location.assign("/workspace/dashboard");
   }
 
   return (
-    <HospitalAuthLayout title="Hospital sign in" subtitle="Administrator access to your facility workspace.">
+    <HospitalAuthLayout title="Hospital sign in" subtitle="Administrator access only. Staff use Create a referral on the homepage.">
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
@@ -71,7 +81,7 @@ export default function WorkspaceLoginPage() {
         New facility? <Link href="/workspace/register">Register your hospital</Link>
       </p>
       <p className="auth-footnote subtle">
-        <Link href="/workspace">Back to workspace</Link>
+        Clinical staff? <Link href="/login?next=/referrals/new">Sign in to create referrals</Link>
       </p>
     </HospitalAuthLayout>
   );
