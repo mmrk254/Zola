@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 
-export function SessionControls() {
+export function SessionControls({ collapsed = false }: { collapsed?: boolean }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef(Date.now());
   const signingOutRef = useRef(false);
@@ -64,9 +64,9 @@ export function SessionControls() {
   }, [signOut]);
 
   return (
-    <button className="side-sign-out" type="button" onClick={() => void signOut()} disabled={signingOut}>
-      <LogOut size={16} />
-      {signingOut ? "Signing out..." : "Sign out"}
+    <button className="side-sign-out" type="button" onClick={() => void signOut()} disabled={signingOut} title="Sign out">
+      <LogOut size={15} />
+      {!collapsed && (signingOut ? "Signing out..." : "Sign out")}
     </button>
   );
 }

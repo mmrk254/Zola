@@ -37,7 +37,7 @@ export default function Home() {
           <a href="#why-zola">Why Zola</a>
           <a href="#security">Built for trust</a>
         </div>
-        <Link href="/dashboard" className="button ghost nav-button">Open workspace <ArrowRight size={15} /></Link>
+        <Link href="/workspace" className="button ghost nav-button">Open workspace <ArrowRight size={15} /></Link>
       </nav>
 
       <section className="marketing-hero">
@@ -46,7 +46,7 @@ export default function Home() {
           <h1>The bed was there.<br />No one could see it <i>in time</i>.</h1>
           <p className="marketing-lede">No Bed Syndrome is not just a shortage. It is a coordination failure. Zola gives care teams one secure pathway to find the right ICU, HDU, or NICU bed when minutes matter.</p>
           <div className="marketing-actions">
-            <Link href="/referrals/new" className="button">Create a referral <ArrowRight size={17} /></Link>
+            <Link href="/login?next=/referrals/new" className="button">Create a referral <ArrowRight size={17} /></Link>
             <a href="#how-it-works" className="marketing-text-link">See how a referral moves <ChevronRight size={17} /></a>
           </div>
           <div className="trust-row"><span><ShieldCheck size={16} /> Clinical workflow</span><span><LockKeyhole size={16} /> Privacy by design</span></div>
@@ -83,8 +83,42 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="marketing-section workspace-section" id="workspace">
+        <div className="section-kicker">For hospitals</div>
+        <div className="section-heading">
+          <h2>One workspace for your entire referral operation.</h2>
+          <p>
+            Hospitals register for network access. Admins provision staff. Clinicians and nurses sign in to create,
+            track, and close referrals without phone chains or lost context.
+          </p>
+        </div>
+        <div className="workspace-landing-grid">
+          <article>
+            <Building2 size={20} />
+            <h3>Register your hospital</h3>
+            <p>Submit your facility for platform approval. No open self-registration.</p>
+            <Link href="/register" className="text-link">Start registration <ArrowRight size={14} /></Link>
+          </article>
+          <article>
+            <LockKeyhole size={20} />
+            <h3>Sign in to workspace</h3>
+            <p>Staff with accounts access the dashboard, inbox, and referral tools.</p>
+            <Link href="/login" className="text-link">Hospital sign in <ArrowRight size={14} /></Link>
+          </article>
+          <article>
+            <ClipboardCheck size={20} />
+            <h3>Create a referral</h3>
+            <p>Clinicians sign in and move straight into the referral workflow.</p>
+            <Link href="/login?next=/referrals/new" className="text-link">Go to referral form <ArrowRight size={14} /></Link>
+          </article>
+        </div>
+        <div className="workspace-landing-cta">
+          <Link href="/workspace" className="button">Open workspace <ArrowRight size={16} /></Link>
+        </div>
+      </section>
+
       <section className="marketing-section value-section" id="why-zola">
-        <div className="value-panel"><div><div className="section-kicker light">Built around real responsibility</div><h2>Every handover is visible. Every decision has an owner.</h2><p>Replace fragmented calls, paper notes, and uncertainty with a workflow that gives every care team the same trusted picture.</p><Link href="/dashboard" className="light-link">Explore the workspace <ArrowRight size={16} /></Link></div><div className="audit-card"><div className="audit-title"><span><UserRoundCheck size={16} /> Referral activity</span><small className="mono">AUDIT TRAIL</small></div><div className="audit-event"><i className="event-teal" /><div><b>Bed accepted</b><span>Nairobi Central Hospital · Grace N.</span></div><time>10:42</time></div><div className="audit-event"><i className="event-blue" /><div><b>Family confirmation recorded</b><span>Kijani County Hospital · Dr. Otieno</span></div><time>10:48</time></div><div className="audit-event"><i className="event-green" /><div><b>Ambulance dispatched</b><span>Regional transport desk</span></div><time>11:02</time></div></div></div>
+        <div className="value-panel"><div><div className="section-kicker light">Built around real responsibility</div><h2>Every handover is visible. Every decision has an owner.</h2><p>Replace fragmented calls, paper notes, and uncertainty with a workflow that gives every care team the same trusted picture.</p><Link href="/workspace" className="light-link">Open the workspace <ArrowRight size={16} /></Link></div><div className="audit-card"><div className="audit-title"><span><UserRoundCheck size={16} /> Referral activity</span><small className="mono">AUDIT TRAIL</small></div><div className="audit-event"><i className="event-teal" /><div><b>Bed accepted</b><span>Nairobi Central Hospital · Grace N.</span></div><time>10:42</time></div><div className="audit-event"><i className="event-blue" /><div><b>Family confirmation recorded</b><span>Kijani County Hospital · Dr. Otieno</span></div><time>10:48</time></div><div className="audit-event"><i className="event-green" /><div><b>Ambulance dispatched</b><span>Regional transport desk</span></div><time>11:02</time></div></div></div>
       </section>
 
       <section className="marketing-section security-section" id="security">

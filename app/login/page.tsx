@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { Activity, ArrowRight, LockKeyhole } from "lucide-react";
+import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { AuthLayout } from "@/components/auth-layout";
 import { supabase } from "@/lib/supabase/client";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("admin@zola.local");
-  const [password, setPassword] = useState("password123");
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/dashboard";
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,15 +23,12 @@ export default function LoginPage() {
     setError(null);
 
     if (!supabase) {
-      setError("Supabase is not configured for sign-in. Add the environment variables first.");
+      setError("Supabase is not configured for sign-in.");
       setLoading(false);
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
       setError(signInError.message);
@@ -33,51 +36,55 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.assign("/dashboard");
+    window.location.assign(next.startsWith("/") ? next : "/dashboard");
   }
 
   return (
-    <main className="login-page">
-      <div className="login-card">
-        <div className="login-brand">
-          <Activity size={18} /> ZOLA
-        </div>
+    <AuthLayout title="Hospital sign in" subtitle="Access your facility workspace with your staff credentials.">
+      {error && <div className="auth-error">{error}</div>}
 
-        <div className="login-heading">
-          <div className="login-icon">
-            <LockKeyhole size={18} />
+      <form onSubmit={handleSubmit} className="auth-form">
+        <label className="auth-field">
+          <span>Email</span>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@hospital.org" required />
+        </label>
+
+        <label className="auth-field">
+          <span>Password</span>
+          <div className="auth-password">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+            <button type="button" className="auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label="Toggle password">
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
-          <div>
-            <div className="login-kicker">Secure access</div>
-            <h1>Sign in</h1>
-          </div>
-        </div>
+        </label>
 
-        {error && <div className="login-error">{error}</div>}
+        <button type="submit" disabled={loading} className="button auth-submit">
+          {loading ? "Signing in..." : "Sign in"}
+          {!loading && <ArrowRight size={16} />}
+        </button>
+      </form>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
+      <p className="auth-footnote">
+        No account yet? <Link href="/register">Register your hospital</Link> or ask your hospital admin to create a staff account.
+      </p>
+      <p className="auth-footnote subtle">
+        <Link href="/workspace">Back to workspace</Link>
+      </p>
+    </AuthLayout>
+  );
+}
 
-          <label>
-            Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </label>
-
-          <button type="submit" disabled={loading} className="button login-submit">
-            {loading ? "Signing in..." : "Continue"}
-            {!loading && <ArrowRight size={16} />}
-          </button>
-        </form>
-
-        <p className="login-note">Need a workspace account? Ask a hospital admin to create one for your facility.</p>
-
-        <div className="login-back">
-          <Link href="/">Back to homepage</Link>
-        </div>
-      </div>
-    </main>
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="auth-loading">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -7,48 +7,59 @@ import {
   Activity,
   Bell,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardPlus,
   LayoutDashboard,
   Menu,
+  Users,
   X
 } from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
+import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
   { href: "/inbox", label: "Hospital inbox", icon: Building2 },
+  { href: "/staff", label: "Staff", icon: Users, adminOnly: true }
 ];
 
-function SideNav({ onNavigate }: { onNavigate?: () => void }) {
+function SideNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { session } = useWorkspace();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
+  const isAdmin =
+    session?.networkAdmin ||
+    session?.memberships.some((m) => m.role === "hospital_admin" && m.status === "active");
 
   return (
     <>
-      <Link href="/" className="brand" onClick={onNavigate}>
-        <Activity size={21} /> ZOLA
+      <Link href="/" className="brand" onClick={onNavigate} title="Zola home">
+        <Activity size={18} /> {!collapsed && "ZOLA"}
       </Link>
-      <p className="side-label">OPERATIONS</p>
+      {!collapsed && <p className="side-label">OPERATIONS</p>}
       <nav className="side-nav">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
           <Link
-            key={item.href + item.label}
+            key={item.href}
             href={item.href}
             className={isActive(item.href) ? "active" : ""}
             onClick={onNavigate}
+            title={item.label}
           >
-            <item.icon size={18} /> {item.label}
+            <item.icon size={17} /> {!collapsed && item.label}
           </Link>
         ))}
       </nav>
       <div className="side-footer">
         <span className={`online-dot ${isSupabaseConfigured ? "" : "offline"}`} />
-        {isSupabaseConfigured ? "System operational" : "Demo data active"}
+        {!collapsed && (isSupabaseConfigured ? "Operational" : "Demo")}
       </div>
-      <SessionControls />
+      <SessionControls collapsed={collapsed} />
     </>
   );
 }
@@ -63,6 +74,12 @@ export function Shell({
   action?: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("zola_sidebar_collapsed");
+    if (stored === "1") setCollapsed(true);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? "hidden" : "";
@@ -71,23 +88,27 @@ export function Shell({
     };
   }, [drawerOpen]);
 
+  function toggleCollapsed() {
+    setCollapsed((value) => {
+      const next = !value;
+      localStorage.setItem("zola_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+  }
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
       <aside className="desktop-aside">
-        <SideNav />
+        <SideNav collapsed={collapsed} />
       </aside>
 
       {drawerOpen && (
-        <button
-          className="mobile-drawer-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setDrawerOpen(false)}
-        />
+        <button className="mobile-drawer-backdrop" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} />
       )}
 
       <aside className={`mobile-drawer ${drawerOpen ? "open" : ""}`} aria-hidden={!drawerOpen}>
         <button className="drawer-close" type="button" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
-          <X size={20} />
+          <X size={18} />
         </button>
         <SideNav onNavigate={() => setDrawerOpen(false)} />
       </aside>
@@ -101,7 +122,15 @@ export function Shell({
               aria-label="Open navigation"
               onClick={() => setDrawerOpen(true)}
             >
-              <Menu size={19} />
+              <Menu size={17} />
+            </button>
+            <button
+              className="icon-button desktop-toggle"
+              type="button"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              onClick={toggleCollapsed}
+            >
+              {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
             </button>
             <div>
               <p className="eyebrow">ZOLA PLATFORM</p>
@@ -111,7 +140,7 @@ export function Shell({
           <div className="header-actions">
             <FacilitySelector />
             <button className="icon-button" aria-label="Notifications">
-              <Bell size={19} />
+              <Bell size={17} />
             </button>
             {action}
           </div>
