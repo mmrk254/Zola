@@ -19,17 +19,35 @@ export type Database = {
         Row: {
           id: string;
           name: string;
-          role: string;
-          hospital_id: string | null;
+          email: string;
           phone: string | null;
-          email: string | null;
+          network_admin: boolean;
+          role?: string | null;
+          hospital_id?: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["users"]["Row"]> & {
           name: string;
-          role: string;
+          email: string;
         };
         Update: Partial<Database["public"]["Tables"]["users"]["Row"]>;
+      };
+      hospital_memberships: {
+        Row: {
+          id: string;
+          user_id: string;
+          hospital_id: string;
+          role: "clinician" | "hospital_staff" | "hospital_admin";
+          status: "active" | "revoked";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["hospital_memberships"]["Row"]> & {
+          user_id: string;
+          hospital_id: string;
+          role: "clinician" | "hospital_staff" | "hospital_admin";
+        };
+        Update: Partial<Database["public"]["Tables"]["hospital_memberships"]["Row"]>;
       };
       referral_cases: {
         Row: {
@@ -39,6 +57,7 @@ export type Database = {
           care_level: "ICU" | "HDU" | "NICU";
           urgency: "critical" | "urgent" | "routine";
           status: string;
+          created_by: string | null;
           referring_facility_id: string;
           receiving_facility_id: string | null;
           clinical_summary: string | null;
@@ -60,6 +79,7 @@ export type Database = {
           from_status: string | null;
           to_status: string;
           actor_user_id: string | null;
+          facility_id: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["referral_events"]["Row"]> & {

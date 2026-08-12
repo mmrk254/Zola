@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
 import { nextReference } from "@/lib/referral-state-machine";
-import { requireHospitalAccess } from "@/lib/auth";
+import {
+  getAccessibleHospitalIds,
+  requireAuthenticatedUser,
+  resolveActingHospital,
+  rolesForReferringAction
+} from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
+  let context;
   try {
-    const userContext = await requireHospitalAccess(request.nextUrl.searchParams.get("hospital_id") ?? "", ["clinician", "hospital_staff", "hospital_admin"]);
-    if (!userContext) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
+    context = await requireAuthenticatedUser();
   } catch (error: any) {
     return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
   }
 
   const supabase = getServiceClient();
   const status = request.nextUrl.searchParams.get("status");
+  const view = request.nextUrl.searchParams.get("view");
   const hospitalId = request.nextUrl.searchParams.get("hospital_id");
 
   let query = supabase
@@ -23,7 +27,33 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
-  if (hospitalId) query = query.eq("referring_facility_id", hospitalId);
+
+  if (context.networkAdmin) {
+    if (hospitalId) query = query.eq("referring_facility_id", hospitalId);
+  } else {
+    const hospitalIds = getAccessibleHospitalIds(context);
+    if (!hospitalIds.length) {
+      return NextResponse.json({ referrals: [] });
+    }
+
+    if (view === "inbox") {
+      query = query.eq("status", "searching");
+      if (!context.networkAdmin) {
+        query = query.not("referring_facility_id", "in", `(${hospitalIds.join(",")})`);
+      }
+    } else if (hospitalId) {
+      if (!hospitalIds.includes(hospitalId)) {
+        return NextResponse.json({ error: "You do not have access to this hospital." }, { status: 403 });
+      }
+      query = query.or(
+        `referring_facility_id.eq.${hospitalId},receiving_facility_id.eq.${hospitalId}`
+      );
+    } else {
+      const filter = hospitalIds.map((id) => `referring_facility_id.eq.${id}`).join(",");
+      const receiveFilter = hospitalIds.map((id) => `receiving_facility_id.eq.${id}`).join(",");
+      query = query.or(`${filter},${receiveFilter}`);
+    }
+  }
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -31,30 +61,34 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let context;
+  let actingHospitalId: string;
+  const body = await request.json();
+
   try {
-    const authContext = await requireHospitalAccess("", ["clinician", "hospital_staff", "hospital_admin"]);
-    if (!authContext) {
-      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    }
+    context = await requireAuthenticatedUser();
+    const acting = resolveActingHospital(
+      context,
+      body.acting_hospital_id ?? body.referring_facility_id,
+      rolesForReferringAction()
+    );
+    actingHospitalId = acting.hospitalId;
   } catch (error: any) {
     return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
   }
 
   const supabase = getServiceClient();
-  const body = await request.json();
 
-  const { patient_initials, care_level, urgency, referring_facility_id, clinical_summary } = body;
+  const { patient_initials, care_level, urgency, clinical_summary } = body;
 
-  if (!patient_initials || !care_level || !referring_facility_id) {
+  if (!patient_initials || !care_level) {
     return NextResponse.json(
-      { error: "patient_initials, care_level, and referring_facility_id are required" },
+      { error: "patient_initials and care_level are required" },
       { status: 400 }
     );
   }
 
-  const { count } = await supabase
-    .from("referral_cases")
-    .select("id", { count: "exact", head: true });
+  const { count } = await supabase.from("referral_cases").select("id", { count: "exact", head: true });
 
   const reference = nextReference((count ?? 0) + 1);
 
@@ -65,18 +99,23 @@ export async function POST(request: NextRequest) {
       patient_initials,
       care_level,
       urgency: urgency ?? "urgent",
-      referring_facility_id,
+      referring_facility_id: actingHospitalId,
       clinical_summary: clinical_summary ?? null,
-      status: "draft"
+      status: "draft",
+      created_by: context!.user.id
     })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await supabase
-    .from("referral_events")
-    .insert({ referral_case_id: referral.id, from_status: null, to_status: "draft" });
+  await supabase.from("referral_events").insert({
+    referral_case_id: referral.id,
+    from_status: null,
+    to_status: "draft",
+    actor_user_id: context!.user.id,
+    facility_id: actingHospitalId
+  });
 
   return NextResponse.json({ referral }, { status: 201 });
 }

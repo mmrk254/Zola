@@ -1,13 +1,41 @@
 import { getServiceClient } from "@/lib/supabase/server";
-import { requireHospitalAccess } from "@/lib/auth";
+import {
+  AuthenticatedUserContext,
+  resolveActingHospital,
+  rolesForReceivingAction,
+  rolesForReferringAction,
+  requireAuthenticatedUser
+} from "@/lib/auth";
 import { canTransition } from "@/lib/referral-state-machine";
 import { ReferralStatus } from "@/lib/types";
+
+type TransitionOptions = {
+  acting_hospital_id?: string;
+  receiving_facility_id?: string;
+};
+
+function hospitalForAction(
+  action: string,
+  current: { referring_facility_id: string; receiving_facility_id: string | null },
+  options: TransitionOptions
+) {
+  if (action === "accept" || action === "decline") {
+    return options.receiving_facility_id ?? current.receiving_facility_id ?? options.acting_hospital_id;
+  }
+  return current.referring_facility_id;
+}
+
+function rolesForAction(action: string) {
+  if (action === "accept" || action === "decline") return rolesForReceivingAction();
+  return rolesForReferringAction();
+}
 
 export async function transitionReferral(
   id: string,
   action: string,
   toStatus: ReferralStatus,
-  extraUpdate: Record<string, unknown> = {}
+  extraUpdate: Record<string, unknown> = {},
+  options: TransitionOptions = {}
 ) {
   const supabase = getServiceClient();
 
@@ -28,11 +56,17 @@ export async function transitionReferral(
     };
   }
 
+  let context: AuthenticatedUserContext;
+  let actorHospitalId: string | null = null;
+
   try {
-    const hospitalId = current.referring_facility_id ?? current.receiving_facility_id;
-    if (hospitalId) {
-      await requireHospitalAccess(hospitalId, ["clinician", "hospital_staff", "hospital_admin"]);
+    context = await requireAuthenticatedUser();
+    const hospitalId = hospitalForAction(action, current, options);
+    if (!hospitalId) {
+      return { error: "A receiving facility is required for this action.", status: 400 as const };
     }
+    const acting = resolveActingHospital(context, options.acting_hospital_id ?? hospitalId, rolesForAction(action));
+    actorHospitalId = acting.hospitalId;
   } catch (error: any) {
     return { error: error.message ?? "Unauthorized", status: 401 as const };
   }
@@ -49,7 +83,9 @@ export async function transitionReferral(
   await supabase.from("referral_events").insert({
     referral_case_id: id,
     from_status: current.status,
-    to_status: toStatus
+    to_status: toStatus,
+    actor_user_id: context.user.id,
+    facility_id: actorHospitalId
   });
 
   return { referral, status: 200 as const };

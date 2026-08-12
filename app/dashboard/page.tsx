@@ -5,18 +5,22 @@ import Link from "next/link";
 import { ArrowRight, BedDouble, Clock3, Plus, RadioTower } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { StatusBadge } from "@/components/status-badge";
+import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { demoReferrals } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { useWorkspace } from "@/lib/use-workspace";
 import { Referral } from "@/lib/types";
 
 export default function Dashboard() {
+  const { activeHospitalId } = useWorkspace();
   const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [errored, setErrored] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    fetch("/api/referrals")
+    const params = activeHospitalId ? `?hospital_id=${activeHospitalId}` : "";
+    fetch(`/api/referrals${params}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.referrals) {
@@ -27,13 +31,14 @@ export default function Dashboard() {
               receiving_facility: r.receiving?.name
             }))
           );
+          setErrored(false);
         } else {
           setErrored(true);
         }
       })
       .catch(() => setErrored(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [activeHospitalId]);
 
   const active = referrals.filter((r) => !["closed", "draft"].includes(r.status));
   const awaitingBed = referrals.filter((r) => ["searching", "ready_to_send"].includes(r.status)).length;
@@ -47,6 +52,8 @@ export default function Dashboard() {
         </Link>
       }
     >
+      <FacilityRequiredNotice />
+
       {!isSupabaseConfigured && (
         <div className="notice warn">
           <RadioTower size={17} />
@@ -68,15 +75,15 @@ export default function Dashboard() {
             <RadioTower />
           </div>
           <p>Active referrals</p>
-          <strong>{loading ? "—" : active.length}</strong>
-          <small>Across all hospitals</small>
+          <strong>{loading ? "..." : active.length}</strong>
+          <small>Across your facilities</small>
         </article>
         <article>
           <div className="metric-icon amber">
             <Clock3 />
           </div>
           <p>Awaiting a bed</p>
-          <strong>{loading ? "—" : awaitingBed}</strong>
+          <strong>{loading ? "..." : awaitingBed}</strong>
           <small>Critical and urgent cases</small>
         </article>
         <article>
@@ -99,7 +106,27 @@ export default function Dashboard() {
             Create referral <ArrowRight size={15} />
           </Link>
         </div>
-        <div className="table-wrap">
+
+        <div className="referral-cards mobile-only">
+          {referrals.length === 0 && !loading ? (
+            <p className="empty-state">No referrals yet. Create the first one to get started.</p>
+          ) : (
+            referrals.map((r) => (
+              <Link key={r.id} href={`/referrals/${r.id}`} className="referral-card">
+                <div className="referral-card-top">
+                  <strong>{r.reference}</strong>
+                  <StatusBadge status={r.status} />
+                </div>
+                <p>
+                  {r.patient_initials} · {r.care_level} · <span className={`urgency ${r.urgency}`}>{r.urgency}</span>
+                </p>
+                <small>{r.referring_facility}</small>
+              </Link>
+            ))
+          )}
+        </div>
+
+        <div className="table-wrap desktop-only">
           {referrals.length === 0 && !loading ? (
             <p className="empty-state">No referrals yet. Create the first one to get started.</p>
           ) : (
@@ -133,7 +160,7 @@ export default function Dashboard() {
                       <StatusBadge status={r.status} />
                     </td>
                     <td>{r.referring_facility}</td>
-                    <td>{r.created_at}</td>
+                    <td>{new Date(r.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>

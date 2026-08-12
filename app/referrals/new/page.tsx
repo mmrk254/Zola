@@ -2,10 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronRight, Save } from "lucide-react";
 import { Shell } from "@/components/shell";
+import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { useWorkspace } from "@/lib/use-workspace";
 import { demoHospitals } from "@/lib/demo-data";
 
 const CONSENT_ITEMS = [
@@ -16,7 +17,7 @@ const CONSENT_ITEMS = [
 ];
 
 export default function NewReferral() {
-  const router = useRouter();
+  const { session, activeHospitalId, actingPayload } = useWorkspace();
   const [hospitals, setHospitals] = useState(demoHospitals);
   const [consent, setConsent] = useState([false, false, false, false]);
   const [submitting, setSubmitting] = useState(false);
@@ -38,11 +39,23 @@ export default function NewReferral() {
       .then((data) => {
         if (data.hospitals?.length) {
           setHospitals(data.hospitals);
-          setForm((f) => ({ ...f, referring_facility_id: data.hospitals[0].id }));
+          const defaultId = activeHospitalId ?? data.hospitals[0].id;
+          setForm((f) => ({ ...f, referring_facility_id: defaultId }));
         }
       })
       .catch(() => {});
-  }, []);
+  }, [activeHospitalId]);
+
+  useEffect(() => {
+    if (activeHospitalId) {
+      setForm((f) => ({ ...f, referring_facility_id: activeHospitalId }));
+    }
+  }, [activeHospitalId]);
+
+  const needsFacility =
+    session &&
+    !session.networkAdmin &&
+    session.memberships.filter((m) => m.status === "active" && m.role !== "hospital_staff").length > 1;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -56,6 +69,10 @@ export default function NewReferral() {
       setError("Select a care level and referring facility.");
       return;
     }
+    if (needsFacility && !activeHospitalId) {
+      setError("Select which facility you are acting for.");
+      return;
+    }
     if (!consent.every(Boolean)) {
       setError("All four consent checks must be confirmed before saving.");
       return;
@@ -66,7 +83,10 @@ export default function NewReferral() {
       const createRes = await fetch("/api/referrals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          acting_hospital_id: activeHospitalId ?? form.referring_facility_id
+        })
       });
       const created = await createRes.json();
       if (!createRes.ok) throw new Error(created.error ?? "Could not create referral");
@@ -74,7 +94,7 @@ export default function NewReferral() {
       const consentRes = await fetch(`/api/referrals/${created.referral.id}/consent`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ checks: consent })
+        body: JSON.stringify({ checks: consent, ...actingPayload })
       });
       const consented = await consentRes.json();
       if (!consentRes.ok) throw new Error(consented.error ?? "Could not confirm consent");
@@ -94,14 +114,13 @@ export default function NewReferral() {
         <ChevronRight size={14} /> New referral
       </div>
 
+      <FacilityRequiredNotice />
+
       {submitted ? (
         <section className="success-card">
           <CheckCircle2 />
           <h2>Referral {submitted.reference} saved</h2>
-          <p>
-            Consent is confirmed and the referral is ready to send. Open it to broadcast it to
-            hospitals.
-          </p>
+          <p>Consent is confirmed and the referral is ready to send. Open it to broadcast it to hospitals.</p>
           <Link className="button" href={`/referrals/${submitted.id}`}>
             Open referral
           </Link>
@@ -109,9 +128,7 @@ export default function NewReferral() {
       ) : (
         <form onSubmit={submit} className="referral-form">
           {!isSupabaseConfigured && (
-            <div className="notice warn">
-              Demo mode: connect Supabase to save real referrals from this form.
-            </div>
+            <div className="notice warn">Demo mode: connect Supabase to save real referrals from this form.</div>
           )}
           {error && <div className="notice error">{error}</div>}
 
@@ -157,23 +174,25 @@ export default function NewReferral() {
                   <option value="routine">Routine</option>
                 </select>
               </label>
-              <label>
-                Referring facility
-                <select
-                  required
-                  value={form.referring_facility_id}
-                  onChange={(e) => setForm((f) => ({ ...f, referring_facility_id: e.target.value }))}
-                >
-                  <option value="" disabled>
-                    Select facility
-                  </option>
-                  {hospitals.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name}
+              {session?.networkAdmin && (
+                <label>
+                  Referring facility
+                  <select
+                    required
+                    value={form.referring_facility_id}
+                    onChange={(e) => setForm((f) => ({ ...f, referring_facility_id: e.target.value }))}
+                  >
+                    <option value="" disabled>
+                      Select facility
                     </option>
-                  ))}
-                </select>
-              </label>
+                    {hospitals.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="full">
                 Clinical summary
                 <textarea

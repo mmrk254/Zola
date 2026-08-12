@@ -2,8 +2,56 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bell, ClipboardPlus, LayoutDashboard, Building2, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Activity,
+  Bell,
+  Building2,
+  ClipboardPlus,
+  LayoutDashboard,
+  Menu,
+  X
+} from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { SessionControls } from "@/components/session-controls";
+import { FacilitySelector } from "@/components/facility-selector";
+
+const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
+  { href: "/inbox", label: "Hospital inbox", icon: Building2 },
+];
+
+function SideNav({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
+  return (
+    <>
+      <Link href="/" className="brand" onClick={onNavigate}>
+        <Activity size={21} /> ZOLA
+      </Link>
+      <p className="side-label">OPERATIONS</p>
+      <nav className="side-nav">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href + item.label}
+            href={item.href}
+            className={isActive(item.href) ? "active" : ""}
+            onClick={onNavigate}
+          >
+            <item.icon size={18} /> {item.label}
+          </Link>
+        ))}
+      </nav>
+      <div className="side-footer">
+        <span className={`online-dot ${isSupabaseConfigured ? "" : "offline"}`} />
+        {isSupabaseConfigured ? "System operational" : "Demo data active"}
+      </div>
+      <SessionControls />
+    </>
+  );
+}
 
 export function Shell({
   children,
@@ -14,42 +62,54 @@ export function Shell({
   title: string;
   action?: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const isActive = (href: string) => pathname === href;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
 
   return (
     <div className="app-shell">
-      <aside>
-        <Link href="/" className="brand">
-          <Activity size={21} /> ZOLA
-        </Link>
-        <p className="side-label">OPERATIONS</p>
-        <nav className="side-nav">
-          <Link href="/dashboard" className={isActive("/dashboard") ? "active" : ""}>
-            <LayoutDashboard size={18} /> Dashboard
-          </Link>
-          <Link href="/referrals/new" className={isActive("/referrals/new") ? "active" : ""}>
-            <ClipboardPlus size={18} /> New referral
-          </Link>
-          <Link href="/dashboard">
-            <Building2 size={18} /> Hospital inbox
-          </Link>
-          <Link href="/dashboard">
-            <Settings size={18} /> Administration
-          </Link>
-        </nav>
-        <div className="side-footer">
-          <span className={`online-dot ${isSupabaseConfigured ? "" : "offline"}`} />
-          {isSupabaseConfigured ? "System operational" : "Demo data active"}
-        </div>
+      <aside className="desktop-aside">
+        <SideNav />
       </aside>
+
+      {drawerOpen && (
+        <button
+          className="mobile-drawer-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      <aside className={`mobile-drawer ${drawerOpen ? "open" : ""}`} aria-hidden={!drawerOpen}>
+        <button className="drawer-close" type="button" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
+          <X size={20} />
+        </button>
+        <SideNav onNavigate={() => setDrawerOpen(false)} />
+      </aside>
+
       <div className="workspace">
         <header>
-          <div>
-            <p className="eyebrow">ZOLA PLATFORM</p>
-            <h1>{title}</h1>
+          <div className="header-leading">
+            <button
+              className="icon-button mobile-menu"
+              type="button"
+              aria-label="Open navigation"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <Menu size={19} />
+            </button>
+            <div>
+              <p className="eyebrow">ZOLA PLATFORM</p>
+              <h1>{title}</h1>
+            </div>
           </div>
           <div className="header-actions">
+            <FacilitySelector />
             <button className="icon-button" aria-label="Notifications">
               <Bell size={19} />
             </button>

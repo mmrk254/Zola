@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });
 
-  const protectedPaths = ["/dashboard", "/referrals", "/api/referrals"];
+  const protectedPaths = ["/dashboard", "/referrals", "/inbox", "/api/referrals", "/api/me", "/api/hospitals"];
   const isProtected = protectedPaths.some((path) => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + "/"));
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -64,5 +64,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/referrals/:path*", "/api/referrals/:path*"]
+  matcher: ["/dashboard/:path*", "/referrals/:path*", "/inbox/:path*", "/api/referrals/:path*", "/api/me", "/api/hospitals"]
 };

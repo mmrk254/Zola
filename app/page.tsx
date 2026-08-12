@@ -44,7 +44,7 @@ export default function Home() {
         <div className="hero-copy-block">
           <p className="marketing-eyebrow"><span className="live-dot" /> Critical care coordination <span>·</span> Kenya</p>
           <h1>The bed was there.<br />No one could see it <i>in time</i>.</h1>
-          <p className="marketing-lede">No Bed Syndrome is not just a shortage — it is a coordination failure. Zola gives care teams one secure pathway to find the right ICU, HDU, or NICU bed when minutes matter.</p>
+          <p className="marketing-lede">No Bed Syndrome is not just a shortage. It is a coordination failure. Zola gives care teams one secure pathway to find the right ICU, HDU, or NICU bed when minutes matter.</p>
           <div className="marketing-actions">
             <Link href="/referrals/new" className="button">Create a referral <ArrowRight size={17} /></Link>
             <a href="#how-it-works" className="marketing-text-link">See how a referral moves <ChevronRight size={17} /></a>

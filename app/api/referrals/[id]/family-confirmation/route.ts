@@ -14,7 +14,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
   }
 
-  const result = await transitionReferral(id, "family-confirmation", "family_confirmed");
+  const result = await transitionReferral(id, "family-confirmation", "family_confirmed", {}, {
+    acting_hospital_id: body.acting_hospital_id
+  });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
 
   const supabase = getServiceClient();

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { Ambulance, Check, Clock3, Send, UserRound, XCircle } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { StatusBadge } from "@/components/status-badge";
+import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { demoReferrals } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { useWorkspace } from "@/lib/use-workspace";
 import { Referral, ReferralEvent, REFERRAL_STEPS, ReferralStatus } from "@/lib/types";
 
 const ACTION_BY_STATUS: Partial<Record<ReferralStatus, { label: string; icon: any; endpoint: string }>> = {
@@ -21,6 +23,7 @@ const ACTION_BY_STATUS: Partial<Record<ReferralStatus, { label: string; icon: an
 
 export default function ReferralDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { activeHospitalId, actingPayload } = useWorkspace();
   const [referral, setReferral] = useState<Referral | null>(null);
   const [events, setEvents] = useState<ReferralEvent[]>([]);
   const [busy, setBusy] = useState(false);
@@ -62,10 +65,15 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
     setBusy(true);
     setError(null);
     try {
+      const payload: Record<string, unknown> = { ...actingPayload, ...(body ?? {}) };
+      if ((endpoint === "accept" || endpoint === "decline") && activeHospitalId) {
+        payload.receiving_facility_id = activeHospitalId;
+      }
+
       const res = await fetch(`/api/referrals/${id}/${endpoint}`, {
         method: endpoint === "consent" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body ?? {})
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Action failed");
@@ -95,6 +103,8 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
         <Link href="/dashboard">Dashboard</Link>
         <span>/</span> Referral detail
       </div>
+
+      <FacilityRequiredNotice />
 
       {error && <div className="notice error">{error}</div>}
 
