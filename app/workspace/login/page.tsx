@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { HospitalAuthLayout } from "@/components/hospital-auth-layout";
 import { supabase } from "@/lib/supabase/client";
 
@@ -50,14 +50,16 @@ export default function WorkspaceLoginPage() {
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Admin email</span>
+          <Mail size={15} className="auth-field-icon" />
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@hospital.org" required />
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Password</span>
           <div className="auth-password">
+            <Lock size={15} className="auth-field-icon" />
             <input
               type={showPassword ? "text" : "password"}
               value={password}

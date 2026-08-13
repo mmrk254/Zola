@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail, Phone, UserRoundCheck } from "lucide-react";
 import { HospitalAuthLayout } from "@/components/hospital-auth-layout";
 
 export default function WorkspaceRegisterPage() {
@@ -73,8 +73,9 @@ export default function WorkspaceRegisterPage() {
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Hospital name</span>
+          <Building2 size={15} className="auth-field-icon" />
           <input
             required
             value={form.hospital_name}
@@ -92,8 +93,9 @@ export default function WorkspaceRegisterPage() {
           </select>
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Administrator full name</span>
+          <UserRoundCheck size={15} className="auth-field-icon" />
           <input
             required
             value={form.admin_name}
@@ -102,8 +104,9 @@ export default function WorkspaceRegisterPage() {
           />
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Administrator email</span>
+          <Mail size={15} className="auth-field-icon" />
           <input
             type="email"
             required
@@ -113,8 +116,9 @@ export default function WorkspaceRegisterPage() {
           />
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Contact phone</span>
+          <Phone size={15} className="auth-field-icon" />
           <input
             required
             value={form.phone}
@@ -123,9 +127,10 @@ export default function WorkspaceRegisterPage() {
           />
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Admin password</span>
           <div className="auth-password">
+            <Lock size={15} className="auth-field-icon" />
             <input
               type={showPassword ? "text" : "password"}
               required
@@ -140,8 +145,9 @@ export default function WorkspaceRegisterPage() {
           </div>
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Confirm password</span>
+          <Lock size={15} className="auth-field-icon" />
           <input
             type={showPassword ? "text" : "password"}
             required

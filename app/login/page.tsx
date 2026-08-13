@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { StaffAuthLayout } from "@/components/staff-auth-layout";
 import { supabase } from "@/lib/supabase/client";
 
@@ -47,8 +47,9 @@ function StaffLoginForm() {
       {error && <div className="auth-error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Email</span>
+          <Mail size={15} className="auth-field-icon" />
           <input
             type="email"
             value={email}
@@ -58,9 +59,10 @@ function StaffLoginForm() {
           />
         </label>
 
-        <label className="auth-field">
+        <label className="auth-field has-icon">
           <span>Password</span>
           <div className="auth-password">
+            <Lock size={15} className="auth-field-icon" />
             <input
               type={showPassword ? "text" : "password"}
               value={password}
