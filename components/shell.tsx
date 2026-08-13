@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -13,6 +12,7 @@ import {
   Menu,
   X
 } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
@@ -40,7 +40,7 @@ function SideNav({
   return (
     <>
       <Link href="/" className="brand" onClick={onNavigate} title="Zola home">
-        <Activity size={18} /> {!collapsed && "ZOLA"}
+        <ZolaLogo size={18} showText={!collapsed} />
       </Link>
       {!collapsed && <p className="side-label">OPERATIONS</p>}
       {showHospitalLink && (
@@ -160,7 +160,8 @@ export function Shell({
           <div className="header-actions">
             {showHospitalLink && (
               <Link href="/workspace/dashboard" className="button compact ghost hospital-back-btn">
-                <Building2 size={15} /> Hospital dashboard
+                <Building2 size={15} />
+                <span className="hospital-back-label">Hospital dashboard</span>
               </Link>
             )}
             <FacilitySelector />

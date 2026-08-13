@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Activity,
   BedDouble,
   Bell,
   Building2,
@@ -17,6 +16,7 @@ import {
   Users,
   X
 } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
 import { NotificationBell } from "@/components/notification-bell";
@@ -38,7 +38,7 @@ function Nav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () =
   return (
     <>
       <Link href="/workspace" className="brand" onClick={onNavigate}>
-        <Activity size={18} /> {!collapsed && "ZOLA"}
+        <ZolaLogo size={18} showText={!collapsed} />
       </Link>
       {!collapsed && <p className="side-label">HOSPITAL</p>}
       <nav className="side-nav">

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 
 const VARIANT_CONTENT: Record<
   "login" | "register",
@@ -47,7 +48,7 @@ export function HospitalAuthLayout({
       <section className="auth-card">
         <div className="portal-form-col">
           <Link href="/workspace" className="portal-brand">
-            <Activity size={17} /> ZOLA
+            <ZolaLogo size={17} />
           </Link>
           <div className="portal-head">
             <p className="portal-eyebrow">

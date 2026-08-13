@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  Activity, Ambulance, ArrowRight, Building2, Check, ChevronRight,
-  ClipboardCheck, LockKeyhole, ShieldCheck, Stethoscope, UserRoundCheck
-} from "lucide-react";
+import { Activity, Ambulance, ArrowRight, Building2, Check, ChevronRight, ClipboardCheck, LockKeyhole, Menu, ShieldCheck, Stethoscope, UserRoundCheck, X } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 
 const referralStates = [
   { label: "Finding a suitable bed", className: "searching" },
@@ -17,6 +15,7 @@ const referralStates = [
 
 export default function Home() {
   const [stateIndex, setStateIndex] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(
@@ -30,14 +29,27 @@ export default function Home() {
 
   return (
     <main className="marketing">
-      <nav className="marketing-nav">
-        <Link href="/" className="brand" aria-label="Zola home"><Activity size={20} /> ZOLA</Link>
+      <nav className={`marketing-nav ${menuOpen ? "menu-open" : ""}`}>
+        <Link href="/" className="brand" aria-label="Zola home">
+          <ZolaLogo size={20} />
+        </Link>
+        <button
+          type="button"
+          className="icon-button marketing-menu-btn"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          {menuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
         <div className="marketing-links">
-          <a href="#how-it-works">How it works</a>
-          <a href="#why-zola">Why Zola</a>
-          <a href="#security">Built for trust</a>
+          <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
+          <a href="#why-zola" onClick={() => setMenuOpen(false)}>Why Zola</a>
+          <a href="#security" onClick={() => setMenuOpen(false)}>Built for trust</a>
+          <Link href="/workspace" className="button ghost nav-button mobile-nav-cta" onClick={() => setMenuOpen(false)}>
+            Open workspace <ArrowRight size={15} />
+          </Link>
         </div>
-        <Link href="/workspace" className="button ghost nav-button">Open workspace <ArrowRight size={15} /></Link>
+        <Link href="/workspace" className="button ghost nav-button desktop-nav-cta">Open workspace <ArrowRight size={15} /></Link>
       </nav>
 
       <section className="marketing-hero">
@@ -92,7 +104,7 @@ export default function Home() {
         <div className="security-grid"><article><span><ShieldCheck /></span><h3>Privacy-aware sharing</h3><p>Only the right information is visible at each point in the referral pathway.</p></article><article><span><UserRoundCheck /></span><h3>Clear responsibility</h3><p>Each action is tied to the person and hospital that made it.</p></article><article><span><Ambulance /></span><h3>Fewer blind transfers</h3><p>Receiving teams can respond with the context they need to prepare.</p></article></div>
       </section>
 
-      <footer className="marketing-footer"><Link href="/" className="brand"><Activity size={18} /> ZOLA</Link><p>Critical care coordination for Kenya&apos;s hospital network.</p><span>© {new Date().getFullYear()} Zola</span></footer>
+      <footer className="marketing-footer"><Link href="/" className="brand"><ZolaLogo size={18} /></Link><p>Critical care coordination for Kenya&apos;s hospital network.</p><span>© {new Date().getFullYear()} Zola</span></footer>
     </main>
   );
 }

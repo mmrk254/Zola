@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#0F8D8A"/>
+  <path d="M10 34h9l4-10 6 20 5-14h20" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="32" y="52" text-anchor="middle" fill="#fff" font-family="Inter, system-ui, sans-serif" font-size="9" font-weight="800" letter-spacing="1.8">ZOLA</text>
+</svg>

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, ArrowRight, Building2, LogIn, ShieldCheck } from "lucide-react";
+import { ArrowRight, Building2, LogIn, ShieldCheck } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 
 const HERO_IMAGE =
@@ -43,7 +44,7 @@ export default function WorkspacePage() {
     <main className="hub-shell">
       <nav className="hub-nav">
         <Link href="/" className="brand">
-          <Activity size={18} /> ZOLA
+          <ZolaLogo size={18} />
         </Link>
         <Link href="/" className="text-link">
           Back to site

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ArrowLeft, Stethoscope } from "lucide-react";
+import { ArrowLeft, Stethoscope } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 
 const STAFF_AUTH_IMAGE =
   "https://images.unsplash.com/photo-1648224395277-052c8108efa3?auto=format&fit=crop&w=1400&q=80";
@@ -26,7 +27,7 @@ export function StaffAuthLayout({
       <section className="auth-card">
         <div className="portal-form-col">
           <Link href="/" className="portal-brand">
-            <Activity size={17} /> ZOLA
+            <ZolaLogo size={17} />
           </Link>
           <div className="portal-head">
             <p className="portal-eyebrow">
