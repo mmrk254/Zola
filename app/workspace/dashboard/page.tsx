@@ -164,7 +164,7 @@ export default function HospitalDashboard() {
           </div>
         </section>
 
-        <div className="quick-actions" style={{ maxWidth: "none" }}>
+        <div className="quick-actions hospital-quick-actions" style={{ maxWidth: "none" }}>
           {QUICK_ACTIONS.map((action) => (
             <Link key={action.href} href={action.href} className="quick-action">
               <action.icon size={16} /> {action.label}

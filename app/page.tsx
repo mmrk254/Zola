@@ -25,11 +25,26 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   const state = referralStates[stateIndex];
 
   return (
-    <main className="marketing">
-      <nav className={`marketing-nav ${menuOpen ? "menu-open" : ""}`}>
+    <main className={`marketing ${menuOpen ? "menu-open" : ""}`}>
+      <button
+        type="button"
+        className="marketing-menu-backdrop"
+        aria-label="Close menu"
+        onClick={() => setMenuOpen(false)}
+        tabIndex={menuOpen ? 0 : -1}
+      />
+
+      <nav className="marketing-nav">
         <Link href="/" className="brand" aria-label="Zola home">
           <ZolaLogo size={20} />
         </Link>
@@ -41,16 +56,45 @@ export default function Home() {
         >
           {menuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
-        <div className="marketing-links">
-          <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
-          <a href="#why-zola" onClick={() => setMenuOpen(false)}>Why Zola</a>
-          <a href="#security" onClick={() => setMenuOpen(false)}>Built for trust</a>
-          <Link href="/workspace" className="button ghost nav-button mobile-nav-cta" onClick={() => setMenuOpen(false)}>
+        <div className="marketing-links desktop-marketing-links">
+          <a href="#how-it-works">How it works</a>
+          <a href="#why-zola">Why Zola</a>
+          <a href="#security">Built for trust</a>
+        </div>
+        <Link href="/workspace" className="button ghost nav-button desktop-nav-cta">
+          Open workspace <ArrowRight size={15} />
+        </Link>
+      </nav>
+
+      <aside className="marketing-mobile-drawer" aria-hidden={!menuOpen}>
+        <div className="marketing-mobile-drawer-head">
+          <Link href="/" className="brand" onClick={() => setMenuOpen(false)}>
+            <ZolaLogo size={18} />
+          </Link>
+          <button
+            type="button"
+            className="drawer-close"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="marketing-mobile-links">
+          <a href="#how-it-works" onClick={() => setMenuOpen(false)}>
+            How it works
+          </a>
+          <a href="#why-zola" onClick={() => setMenuOpen(false)}>
+            Why Zola
+          </a>
+          <a href="#security" onClick={() => setMenuOpen(false)}>
+            Built for trust
+          </a>
+          <Link href="/workspace" className="button" onClick={() => setMenuOpen(false)}>
             Open workspace <ArrowRight size={15} />
           </Link>
         </div>
-        <Link href="/workspace" className="button ghost nav-button desktop-nav-cta">Open workspace <ArrowRight size={15} /></Link>
-      </nav>
+      </aside>
 
       <section className="marketing-hero">
         <div className="hero-copy-block">
