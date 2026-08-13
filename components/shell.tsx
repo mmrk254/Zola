@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Building2,
@@ -17,6 +17,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
 import { NotificationBell } from "@/components/notification-bell";
+import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,7 +25,15 @@ const NAV_ITEMS = [
   { href: "/inbox", label: "Hospital inbox", icon: Building2 }
 ];
 
-function SideNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+function SideNav({
+  collapsed,
+  onNavigate,
+  showHospitalLink
+}: {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+  showHospitalLink: boolean;
+}) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -34,6 +43,11 @@ function SideNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: 
         <Activity size={18} /> {!collapsed && "ZOLA"}
       </Link>
       {!collapsed && <p className="side-label">OPERATIONS</p>}
+      {showHospitalLink && (
+        <Link href="/workspace/dashboard" className="side-nav-back" onClick={onNavigate}>
+          <Building2 size={16} /> {!collapsed && "Hospital dashboard"}
+        </Link>
+      )}
       <nav className="side-nav">
         {NAV_ITEMS.map((item) => (
           <Link
@@ -65,8 +79,19 @@ export function Shell({
   title: string;
   action?: React.ReactNode;
 }) {
+  const { session } = useWorkspace();
+  const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  const showHospitalLink = useMemo(() => {
+    if (!session) return false;
+    return (
+      (session.networkAdmin ||
+        session.memberships.some((m) => m.role === "hospital_admin" && m.status === "active")) &&
+      !pathname.startsWith("/workspace")
+    );
+  }, [session, pathname]);
 
   useEffect(() => {
     const stored = localStorage.getItem("zola_sidebar_collapsed");
@@ -91,7 +116,7 @@ export function Shell({
   return (
     <div className={`app-shell ${collapsed ? "sidebar-collapsed" : ""} ${drawerOpen ? "drawer-open" : ""}`}>
       <aside className="desktop-aside">
-        <SideNav collapsed={collapsed} />
+        <SideNav collapsed={collapsed} showHospitalLink={showHospitalLink} />
       </aside>
 
       <button
@@ -105,7 +130,7 @@ export function Shell({
         <button className="drawer-close" type="button" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
           <X size={18} />
         </button>
-        <SideNav onNavigate={() => setDrawerOpen(false)} />
+        <SideNav onNavigate={() => setDrawerOpen(false)} showHospitalLink={showHospitalLink} />
       </aside>
 
       <div className="workspace">
@@ -133,6 +158,11 @@ export function Shell({
             </div>
           </div>
           <div className="header-actions">
+            {showHospitalLink && (
+              <Link href="/workspace/dashboard" className="button compact ghost hospital-back-btn">
+                <Building2 size={15} /> Hospital dashboard
+              </Link>
+            )}
             <FacilitySelector />
             <NotificationBell />
             {action}

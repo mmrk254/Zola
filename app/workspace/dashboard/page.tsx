@@ -5,19 +5,24 @@ import Link from "next/link";
 import {
   ArrowRight,
   BedDouble,
+  Bell,
   Building2,
   FileBarChart2,
   Inbox,
+  LayoutDashboard,
   Truck,
   Users
 } from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
+import { useNotifications } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { demoCapacity, demoReferrals } from "@/lib/demo-data";
 import { CapacitySnapshot, PIPELINE_BUCKETS, Referral } from "@/lib/types";
 
 const QUICK_ACTIONS = [
+  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
+  { href: "/dashboard", label: "Referral operations", icon: LayoutDashboard },
   { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
   { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
   { href: "/inbox", label: "Referral inbox", icon: Inbox },
@@ -27,6 +32,7 @@ const QUICK_ACTIONS = [
 
 export default function HospitalDashboard() {
   const { session, activeHospitalId } = useWorkspace();
+  const { items: notifications, unread } = useNotifications();
   const [stats, setStats] = useState({ referrals: 0, staff: 0, searching: 0 });
   const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
   const [capacity, setCapacity] = useState<CapacitySnapshot[]>(demoCapacity);
@@ -104,6 +110,32 @@ export default function HospitalDashboard() {
             <strong>{loading ? "..." : stats.searching}</strong>
           </article>
         </div>
+
+        {unread.length > 0 && (
+          <section className="panel hospital-notif-strip" style={{ maxWidth: "none" }}>
+            <div className="panel-heading">
+              <div>
+                <h2>Needs attention</h2>
+                <p>{unread.length} referral{unread.length === 1 ? "" : "s"} waiting on your team</p>
+              </div>
+              <Link href="/workspace/notifications" className="text-link">
+                View all <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="inbox-list">
+              {notifications.slice(0, 3).map((n) => (
+                <article key={n.id} className="inbox-item unread">
+                  <div>
+                    <Link href={`/referrals/${n.referralId}`} className="ref-link">
+                      {n.reference}
+                    </Link>
+                    <p>{n.message}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="panel" style={{ maxWidth: "none" }}>
           <div className="panel-heading">

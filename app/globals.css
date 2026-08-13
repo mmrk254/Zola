@@ -221,6 +221,14 @@ input:disabled, select:disabled, textarea:disabled { background: var(--cream-war
 .ambulance-preview { margin: 12px 0; padding: 12px; border-radius: 8px; background: var(--cream-warm); font-size: 13px; }
 .ambulance-preview p { margin: 0 0 4px; }
 .role-pill.warn { background: #fbf2df; color: #8a5a00; }
+.notice.accept-banner { background: #e6f3eb; border-color: rgba(15, 141, 138, 0.25); color: #1f4f3f; }
+.side-nav-back {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 10px 12px;
+  border-radius: 8px; background: #eef3fb; color: #3d4f6d; font-size: 12.5px; font-weight: 700;
+}
+.side-nav-back:hover { background: #e3ebf7; color: var(--navy); }
+.hospital-back-btn { white-space: nowrap; }
+.hospital-notif-strip { border-color: rgba(15, 141, 138, 0.22); }
 .modal h2 { margin: 0 0 8px; font: 700 18px var(--font-display); color: var(--navy); }
 .modal p { color: var(--muted); font-size: 14px; margin: 0 0 18px; }
 

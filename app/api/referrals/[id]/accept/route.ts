@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     id,
     "accept",
     "hospital_accepted",
-    receiving_facility_id ? { receiving_facility_id } : {},
+    { receiving_facility_id: receiving_facility_id ?? acting_hospital_id },
     { receiving_facility_id, acting_hospital_id }
   );
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });

@@ -42,6 +42,18 @@ export async function GET(request: NextRequest) {
       query = query.or(
         `receiving_facility_id.eq.${inboxHospital},and(receiving_facility_id.is.null,referring_facility_id.neq.${inboxHospital})`
       );
+
+      const { data, error } = await query;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+      const { data: declinedRows } = await supabase
+        .from("referral_responses")
+        .select("referral_case_id")
+        .eq("hospital_id", inboxHospital);
+
+      const declinedIds = new Set((declinedRows ?? []).map((row) => row.referral_case_id));
+      const referrals = (data ?? []).filter((row) => !declinedIds.has(row.id));
+      return NextResponse.json({ referrals });
     } else if (hospitalId) {
       if (!hospitalIds.includes(hospitalId)) {
         return NextResponse.json({ error: "You do not have access to this hospital." }, { status: 403 });

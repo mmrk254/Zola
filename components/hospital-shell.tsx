@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   BedDouble,
+  Bell,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -18,10 +19,12 @@ import {
 } from "lucide-react";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
+import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
   { href: "/workspace/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
   { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
   { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
   { href: "/workspace/staff", label: "Staff accounts", icon: Users },
@@ -145,6 +148,7 @@ export function HospitalShell({
           </div>
           <div className="header-actions">
             <FacilitySelector />
+            <NotificationBell />
             {action}
           </div>
         </header>

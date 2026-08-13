@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, use } from "react";
 import Link from "next/link";
-import { Ambulance, Check, Clock3, ScrollText, Send, UserRound, X, XCircle } from "lucide-react";
+import { Ambulance, Check, Clock3, RadioTower, ScrollText, Send, UserRound, X, XCircle } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { StatusBadge } from "@/components/status-badge";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
@@ -150,6 +150,28 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
 
       <FacilityRequiredNotice />
       {error && <div className="notice error">{error}</div>}
+
+      {referral.status === "searching" && referral.transfer_mode === "external" && isReferringHospital && (
+        <div className="notice">
+          <RadioTower size={16} />
+          <span>
+            <b>Broadcast live.</b> All network hospitals can see this case. The first to accept is assigned — it then disappears from other hospitals&apos; inboxes.
+          </span>
+        </div>
+      )}
+
+      {referral.receiving_facility &&
+        ["hospital_accepted", "family_confirmed", "ambulance_arranged", "patient_en_route", "patient_received", "closed"].includes(
+          referral.status
+        ) && (
+          <div className="notice accept-banner">
+            <Check size={16} />
+            <span>
+              <b>Accepted by {referral.receiving_facility}</b>
+              {referral.status === "searching" ? "" : " — referring team can continue the case."}
+            </span>
+          </div>
+        )}
 
       <section className="detail-grid">
         <div>

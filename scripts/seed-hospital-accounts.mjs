@@ -87,6 +87,23 @@ async function ensureMembership(userId, hospitalId, role) {
   if (error) throw error;
 }
 
+async function ensureAmbulances(hospitalId, index) {
+  const prefixes = ["KCA", "KCB", "KCC", "KCD", "KCE", "KCF", "KCG", "KCH"];
+  const prefix = prefixes[(index - 1) % prefixes.length];
+  const fleet = [
+    { plate_number: `${prefix}${String(10 + index).padStart(2, "0")}A`, driver_name: "James Otieno", driver_phone: `+254712${String(index).padStart(6, "0")}` },
+    { plate_number: `${prefix}${String(40 + index).padStart(2, "0")}B`, driver_name: "Mary Wanjiku", driver_phone: `+254713${String(index).padStart(6, "0")}` }
+  ];
+
+  for (const unit of fleet) {
+    const { error } = await supabase.from("hospital_ambulances").upsert(
+      { hospital_id: hospitalId, ...unit, status: "available" },
+      { onConflict: "hospital_id,plate_number" }
+    );
+    if (error) throw error;
+  }
+}
+
 async function main() {
   const { data: hospitals, error } = await supabase.from("hospitals").select("id, name").order("name");
   if (error) throw error;
@@ -94,12 +111,16 @@ async function main() {
   console.log("\n=== Zola hospital test accounts ===\n");
   console.log(`Password for all accounts: ${PASSWORD}\n`);
 
+  let hospitalIndex = 0;
   for (const account of HOSPITAL_ACCOUNTS) {
     const hospital = hospitals?.find((h) => h.name === account.hospitalName);
     if (!hospital) {
       console.warn(`Hospital not found, skipping: ${account.hospitalName}`);
       continue;
     }
+
+    hospitalIndex += 1;
+    await ensureAmbulances(hospital.id, hospitalIndex);
 
     const adminId = await ensureUser(account.adminEmail, account.adminName, "hospital_admin");
     await ensureMembership(adminId, hospital.id, "hospital_admin");
@@ -114,8 +135,15 @@ async function main() {
     console.log(`  Staff login: /login\n`);
   }
 
-  console.log("Done. Run the workflow migration if you have not already:");
-  console.log("  supabase/migrations/202608130002_referral_workflow_ambulances.sql");
+  let extraIndex = hospitalIndex;
+  for (const hospital of hospitals ?? []) {
+    if (HOSPITAL_ACCOUNTS.some((a) => a.hospitalName === hospital.name)) continue;
+    extraIndex += 1;
+    await ensureAmbulances(hospital.id, extraIndex);
+    console.log(`Ambulances seeded for: ${hospital.name}`);
+  }
+
+  console.log("Done. Run pending migrations in Supabase if you have not already.");
 }
 
 main().catch((err) => {

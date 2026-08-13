@@ -7,7 +7,6 @@ import { Shell } from "@/components/shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
-import { demoHospitals } from "@/lib/demo-data";
 import { TransferMode } from "@/lib/types";
 
 const CONSENT_ITEMS = [
@@ -110,7 +109,7 @@ export default function NewReferral() {
         <section className="success-card">
           <CheckCircle2 />
           <h2>Referral {submitted.reference} saved</h2>
-          <p>Consent is confirmed and the referral is ready to send. Open it to broadcast it to hospitals.</p>
+          <p>Consent is confirmed. Open the referral and send it — all network hospitals will be notified.</p>
           <Link className="button" href={`/referrals/${submitted.id}`}>
             Open referral
           </Link>
@@ -194,8 +193,8 @@ export default function NewReferral() {
                   onChange={() => setForm((f) => ({ ...f, transfer_mode: "external", patient_location: "" }))}
                 />
                 <div>
-                  <b>External referral</b>
-                  <small>Broadcast to network hospitals — they must accept before you continue.</small>
+                  <b>Broadcast to all hospitals</b>
+                  <small>No hospital is chosen upfront. Every network hospital sees this case — the first to accept gets the referral.</small>
                 </div>
               </label>
               <label className={`transfer-option ${form.transfer_mode === "internal_onsite" ? "selected" : ""}`}>

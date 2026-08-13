@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, Check, RadioTower } from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
@@ -87,6 +88,8 @@ export function useNotifications() {
 
 export function NotificationBell() {
   const { items, unread, readSet, markAllRead } = useNotifications();
+  const pathname = usePathname();
+  const allNotificationsHref = pathname.startsWith("/workspace") ? "/workspace/notifications" : "/notifications";
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -134,7 +137,7 @@ export function NotificationBell() {
               ))}
             </div>
           )}
-          <Link href="/notifications" className="notif-view-all" onClick={() => setOpen(false)}>
+          <Link href={allNotificationsHref} className="notif-view-all" onClick={() => setOpen(false)}>
             View all notifications
           </Link>
         </div>

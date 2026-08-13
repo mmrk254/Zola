@@ -13,7 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .eq("id", id)
     .single();
 
-  const extraUpdate: Record<string, unknown> = {};
+  const extraUpdate: Record<string, unknown> = { receiving_facility_id: null };
   if (current && ["internal_onsite", "internal_offsite"].includes(current.transfer_mode)) {
     extraUpdate.receiving_facility_id = current.receiving_facility_id ?? current.referring_facility_id;
   }

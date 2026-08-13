@@ -87,7 +87,7 @@ export default function InboxPage() {
         <div className="panel-heading">
           <div>
             <h2>Incoming referrals</h2>
-            <p>Accept or decline with a reason — referring staff can only continue after you accept.</p>
+            <p>All network hospitals see broadcast cases. First to accept wins — others lose it from their inbox. Declining only removes it from yours.</p>
           </div>
           <Link href="/dashboard" className="text-link">
             Back to dashboard <ArrowRight size={15} />

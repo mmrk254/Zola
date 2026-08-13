@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { requireAuthenticatedUser, resolveActingHospital } from "@/lib/auth";
+import { requireAuthenticatedUser } from "@/lib/auth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,7 +19,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const context = await requireAuthenticatedUser();
-    resolveActingHospital(context, body.acting_hospital_id ?? membership.hospital_id, ["hospital_admin"]);
+    const targetHospitalId = membership.hospital_id;
+
+    const canEdit =
+      context.networkAdmin ||
+      context.memberships.some(
+        (m) =>
+          m.hospital_id === targetHospitalId && m.status === "active" && m.role === "hospital_admin"
+      );
+
+    if (!canEdit) {
+      return NextResponse.json(
+        { error: "You must be a hospital admin for this facility to edit staff accounts." },
+        { status: 403 }
+      );
+    }
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (body.role && ["clinician", "hospital_staff", "hospital_admin"].includes(body.role)) {
@@ -40,6 +54,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (body.name?.trim()) {
       await supabase.from("users").update({ name: body.name.trim() }).eq("id", membership.user_id);
+    }
+
+    if (updates.role) {
+      await supabase.from("users").update({ role: updates.role }).eq("id", membership.user_id);
     }
 
     if (body.password && body.password.length >= 8) {

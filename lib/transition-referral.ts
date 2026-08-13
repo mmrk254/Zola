@@ -100,10 +100,25 @@ export async function transitionReferral(
     .from("referral_cases")
     .update({ status: toStatus, updated_at: new Date().toISOString(), ...extraUpdate })
     .eq("id", id)
+    .eq("status", current.status)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) return { error: error.message, status: 500 as const };
+
+  if (!referral) {
+    const message =
+      action === "accept"
+        ? "Another hospital has already accepted this referral."
+        : "This referral has already moved to the next stage.";
+    return { error: message, status: 409 as const };
+  }
+
+  let eventNotes = options.notes ?? null;
+  if (action === "accept" && actorHospitalId) {
+    const { data: hospital } = await supabase.from("hospitals").select("name").eq("id", actorHospitalId).maybeSingle();
+    eventNotes = hospital?.name ? `Accepted by ${hospital.name}` : eventNotes;
+  }
 
   await supabase.from("referral_events").insert({
     referral_case_id: id,
@@ -111,7 +126,7 @@ export async function transitionReferral(
     to_status: toStatus,
     actor_user_id: context.user.id,
     facility_id: actorHospitalId,
-    notes: options.notes ?? null
+    notes: eventNotes
   });
 
   if (toStatus === "patient_received" || toStatus === "closed") {

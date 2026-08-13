@@ -9,7 +9,6 @@ import { supabase } from "@/lib/supabase/client";
 
 function StaffLoginForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +35,18 @@ function StaffLoginForm() {
       return;
     }
 
-    window.location.assign(next.startsWith("/") ? next : "/dashboard");
+    const requestedNext = searchParams.get("next");
+    if (requestedNext?.startsWith("/")) {
+      window.location.assign(requestedNext);
+      return;
+    }
+
+    const me = await fetch("/api/me").then((res) => (res.ok ? res.json() : null));
+    const isHospitalAdmin =
+      me?.networkAdmin ||
+      me?.memberships?.some((m: { role: string; status: string }) => m.role === "hospital_admin" && m.status === "active");
+
+    window.location.assign(isHospitalAdmin ? "/workspace/dashboard" : "/dashboard");
   }
 
   return (
