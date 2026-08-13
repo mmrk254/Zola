@@ -35,18 +35,25 @@ function StaffLoginForm() {
       return;
     }
 
+    const me = await fetch("/api/me").then((res) => (res.ok ? res.json() : null));
+    const isHospitalAdmin =
+      me?.networkAdmin ||
+      me?.memberships?.some((m: { role: string; status: string }) => m.role === "hospital_admin" && m.status === "active");
+
+    if (isHospitalAdmin) {
+      await supabase.auth.signOut();
+      setError("Hospital administrator accounts must sign in through the hospital workspace, not staff sign-in.");
+      setLoading(false);
+      return;
+    }
+
     const requestedNext = searchParams.get("next");
     if (requestedNext?.startsWith("/")) {
       window.location.assign(requestedNext);
       return;
     }
 
-    const me = await fetch("/api/me").then((res) => (res.ok ? res.json() : null));
-    const isHospitalAdmin =
-      me?.networkAdmin ||
-      me?.memberships?.some((m: { role: string; status: string }) => m.role === "hospital_admin" && m.status === "active");
-
-    window.location.assign(isHospitalAdmin ? "/workspace/dashboard" : "/dashboard");
+    window.location.assign("/dashboard");
   }
 
   return (

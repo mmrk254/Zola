@@ -9,9 +9,13 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  ClipboardPlus,
+  CreditCard,
   FileBarChart2,
+  Inbox,
   LayoutDashboard,
   Menu,
+  Plus,
   Truck,
   Users,
   X
@@ -24,8 +28,11 @@ import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
   { href: "/workspace/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
+  { href: "/inbox", label: "Referral inbox", icon: Inbox },
   { href: "/workspace/notifications", label: "Notifications", icon: Bell },
   { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
+  { href: "/workspace/payments", label: "Payments", icon: CreditCard },
   { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
   { href: "/workspace/staff", label: "Staff accounts", icon: Users },
   { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 },
@@ -147,6 +154,9 @@ export function HospitalShell({
             </div>
           </div>
           <div className="header-actions">
+            <Link href="/referrals/new" className="button compact mobile-new-referral">
+              <Plus size={15} /> New referral
+            </Link>
             <FacilitySelector />
             <NotificationBell />
             {action}

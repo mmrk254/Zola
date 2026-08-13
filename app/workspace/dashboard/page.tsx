@@ -7,6 +7,8 @@ import {
   BedDouble,
   Bell,
   Building2,
+  ClipboardPlus,
+  CreditCard,
   FileBarChart2,
   Inbox,
   LayoutDashboard,
@@ -21,7 +23,9 @@ import { demoCapacity, demoReferrals } from "@/lib/demo-data";
 import { CapacitySnapshot, PIPELINE_BUCKETS, Referral } from "@/lib/types";
 
 const QUICK_ACTIONS = [
+  { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
   { href: "/workspace/notifications", label: "Notifications", icon: Bell },
+  { href: "/workspace/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard", label: "Referral operations", icon: LayoutDashboard },
   { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
   { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },

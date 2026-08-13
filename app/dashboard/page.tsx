@@ -108,7 +108,7 @@ export default function Dashboard() {
         </article>
       </section>
 
-      <div className="quick-actions">
+      <div className="quick-actions ops-quick-actions">
         {QUICK_ACTIONS.map((action) => (
           <Link key={action.href} href={action.href} className="quick-action">
             <action.icon size={16} /> {action.label}

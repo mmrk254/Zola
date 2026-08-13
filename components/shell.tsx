@@ -8,8 +8,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardPlus,
+  CreditCard,
   LayoutDashboard,
   Menu,
+  Plus,
   X
 } from "lucide-react";
 import { ZolaLogo } from "@/components/zola-logo";
@@ -22,7 +24,8 @@ import { useWorkspace } from "@/lib/use-workspace";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
-  { href: "/inbox", label: "Hospital inbox", icon: Building2 }
+  { href: "/inbox", label: "Hospital inbox", icon: Building2 },
+  { href: "/payments", label: "Payments", icon: CreditCard }
 ];
 
 function SideNav({
@@ -164,6 +167,9 @@ export function Shell({
                 <span className="hospital-back-label">Hospital dashboard</span>
               </Link>
             )}
+            <Link href="/referrals/new" className="button compact mobile-new-referral">
+              <Plus size={15} /> New referral
+            </Link>
             <FacilitySelector />
             <NotificationBell />
             {action}

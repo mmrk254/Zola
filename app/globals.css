@@ -1112,7 +1112,8 @@ body {
   .report-bar-row { grid-template-columns: 84px 1fr 28px; gap: 8px; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hospital-dash-head { flex-direction: column; align-items: flex-start; }
-  .hospital-quick-actions { display: none; }
+  .hospital-quick-actions,
+  .ops-quick-actions { display: none; }
   .pipeline-bar { overflow: hidden; }
   .content { max-width: 100%; }
 }
@@ -1189,4 +1190,61 @@ body {
   .brand { letter-spacing: .08em; font-size: 13px; }
   .header-pill { font-size: 11px; padding: 5px 8px; }
   .marketing h1 { font-size: 34px; }
+}
+
+.mobile-new-referral { display: none; }
+.header-action-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .mobile-new-referral { display: inline-flex; }
+  .app-shell:not(.hospital-shell) .workspace header .header-actions > .button.compact:not(.mobile-new-referral):not(.hospital-back-btn) {
+    display: none;
+  }
+}
+
+/* ---------- Payments ---------- */
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+.pricing-card { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; display: grid; gap: 10px; }
+.pricing-card h3 { margin: 0; font-family: var(--font-display); font-size: 14px; }
+.pricing-card label { display: grid; gap: 5px; font-size: 11px; font-weight: 700; color: #57503f; }
+.payment-ledger { display: grid; gap: 10px; }
+.payment-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.payment-row p { margin: 4px 0; font-size: 13px; }
+.payment-row small { color: var(--muted); font-size: 12px; }
+.payment-row-amounts { text-align: right; }
+.payment-row-amounts span { display: block; font-weight: 700; font-size: 14px; }
+.payment-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.payment-modal { max-width: 520px; }
+.payment-receipt-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+.payment-receipt-head h2 { margin: 4px 0 0; font-family: var(--font-mono); font-size: 16px; }
+.payment-status { padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.payment-status.paid { background: #e6f3eb; color: var(--green); }
+.payment-status.partial { background: #fbf2df; color: #8a5a00; }
+.payment-status.pending { background: #fbeef0; color: var(--red); }
+.payment-status.waived { background: #edeae2; color: #5a6a80; }
+.receipt-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 0 0 16px; }
+.receipt-dl div { display: grid; gap: 2px; }
+.receipt-dl dt { font-size: 10px; text-transform: uppercase; color: #9c917f; font-weight: 700; }
+.receipt-dl dd { margin: 0; font-size: 13px; }
+.receipt-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.receipt-table td { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.receipt-table td:last-child { text-align: right; font-weight: 700; }
+.receipt-notes { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.receipt-footer { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.report-kpi-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.report-kpi-list div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--cream-warm); }
+.report-kpi-list dt { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.report-kpi-list dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--navy); }
+
+@media (max-width: 900px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+  .payment-row { grid-template-columns: 1fr; }
+  .payment-row-amounts { text-align: left; }
+  .receipt-dl { grid-template-columns: 1fr; }
+  .report-kpi-list { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .app-shell header, .mobile-menu, .pwa-install-banner, .header-actions, .side-nav-back { display: none !important; }
+  .content { padding: 0; }
 }
