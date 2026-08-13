@@ -5,7 +5,8 @@ import Link from "next/link";
 import { CreditCard, Plus, Printer, Save } from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
-import { PaymentReceiptView, printPaymentReceipt } from "@/components/payment-receipt";
+import { PaymentReceiptView, openPaymentReceiptExport } from "@/components/payment-receipt";
+import { useDocumentExport } from "@/components/document-export-dialog";
 import {
   ACCEPTED_STATUSES,
   BedPricing,
@@ -39,6 +40,7 @@ type ReceiptView = { record: PaymentRecord; installmentId?: string };
 
 export default function HospitalPaymentsPage() {
   const { activeHospitalId, session } = useWorkspace();
+  const { openExport, dialog: exportDialog } = useDocumentExport();
   const hospitalName =
     session?.memberships.find((m) => m.hospital_id === activeHospitalId)?.hospital_name ?? "Your facility";
 
@@ -325,8 +327,8 @@ export default function HospitalPaymentsPage() {
                     </button>
                   )}
                   <button type="button" className="button compact ghost" onClick={() => setReceiptView({ record: p })}>View</button>
-                  <button type="button" className="button compact ghost" onClick={() => printPaymentReceipt(p, hospitalName)}>
-                    <Printer size={14} /> PDF
+                  <button type="button" className="button compact ghost" onClick={() => openPaymentReceiptExport(openExport, p, hospitalName, latestInstallment(p))}>
+                    <Printer size={14} /> Export
                   </button>
                 </div>
               </article>
@@ -424,19 +426,22 @@ export default function HospitalPaymentsPage() {
                 type="button"
                 className="button"
                 onClick={() =>
-                  printPaymentReceipt(
+                  openPaymentReceiptExport(
+                    openExport,
                     receiptView.record,
                     hospitalName,
                     receiptView.record.installments.find((i) => i.id === receiptView.installmentId) ?? latestInstallment(receiptView.record)
                   )
                 }
               >
-                <Printer size={15} /> Print / save PDF
+                <Printer size={15} /> Export receipt
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {exportDialog}
     </HospitalShell>
   );
 }

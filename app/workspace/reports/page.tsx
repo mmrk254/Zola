@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download, Printer } from "lucide-react";
+import { Download } from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
+import { useDocumentExport } from "@/components/document-export-dialog";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
 import { demoReferrals } from "@/lib/demo-data";
 import { demoPayments, formatKes, loadPayments } from "@/lib/demo-payments";
-import { downloadCsv, printHtml } from "@/lib/export-document";
+import { buildReportDocument, buildReportExportData } from "@/lib/report-export";
 import { CareLevel, PIPELINE_BUCKETS, Referral, Urgency } from "@/lib/types";
 
 function BarRows({ rows }: { rows: { label: string; count: number }[] }) {
@@ -30,6 +31,7 @@ function BarRows({ rows }: { rows: { label: string; count: number }[] }) {
 
 export default function ReportsPage() {
   const { activeHospitalId, session } = useWorkspace();
+  const { openExport, dialog: exportDialog } = useDocumentExport();
   const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
   const [payments, setPayments] = useState(demoPayments);
   const [loading, setLoading] = useState(isSupabaseConfigured);
@@ -97,61 +99,36 @@ export default function ReportsPage() {
     [referrals]
   );
 
-  function exportCsv() {
-    downloadCsv(`zola-reports-${hospitalName.replace(/\s+/g, "-").toLowerCase()}.csv`, [
-      ["Report", "Value"],
-      ["Hospital", hospitalName],
-      ["Generated", new Date().toLocaleString("en-KE")],
-      ["Total referrals", String(total)],
-      ["Acceptance rate", `${acceptanceRate}%`],
-      ["Completion rate", `${completionRate}%`],
-      ["Critical cases", String(critical)],
-      ["In transit", String(inTransit)],
-      ["Declined / unmatched", String(declined)],
-      ["Payments collected", formatKes(collected)],
-      ["Outstanding balance", formatKes(outstanding)],
-      ...pipeline.map((p) => [`Pipeline: ${p.label}`, String(p.count)]),
-      ...byCareLevel.map((p) => [`Care level: ${p.label}`, String(p.count)])
-    ]);
-  }
-
-  function printReport() {
-    const rows = [
-      ...pipeline.map((p) => `<tr><td>${p.label}</td><td>${p.count}</td></tr>`),
-      ...byCareLevel.map((p) => `<tr><td>${p.label} volume</td><td>${p.count}</td></tr>`),
-      ...byUrgency.map((p) => `<tr><td>${p.label} urgency</td><td>${p.count}</td></tr>`)
-    ].join("");
-    printHtml(
-      `Zola reports — ${hospitalName}`,
-      `<h1>Hospital coordination report</h1>
-      <p class="meta">${hospitalName} · ${new Date().toLocaleString("en-KE")}</p>
-      <table><tr><th>Metric</th><th>Value</th></tr>
-      <tr><td>Total referrals</td><td>${total}</td></tr>
-      <tr><td>Matched to a bed</td><td>${matchedRate}%</td></tr>
-      <tr><td>Acceptance rate</td><td>${acceptanceRate}%</td></tr>
-      <tr><td>Transfer completion</td><td>${completionRate}%</td></tr>
-      <tr><td>Critical cases</td><td>${critical}</td></tr>
-      <tr><td>Patients in transit</td><td>${inTransit}</td></tr>
-      <tr><td>Payments collected</td><td>${formatKes(collected)}</td></tr>
-      <tr><td>Outstanding</td><td>${formatKes(outstanding)}</td></tr>
-      ${rows}
-      </table>
-      <p class="footer">Zola critical care coordination · Confidential clinical operations report</p>`
+  function openReportExport() {
+    const doc = buildReportDocument(
+      buildReportExportData({
+        hospitalName,
+        total,
+        matchedRate,
+        acceptanceRate,
+        completionRate,
+        critical,
+        inTransit,
+        declined,
+        collected: formatKes(collected),
+        outstanding: formatKes(outstanding),
+        pipeline,
+        byCareLevel,
+        byUrgency,
+        byReferringFacility: byReferringFacility.length ? byReferringFacility : [{ label: "No data", count: 0 }],
+        transferModes
+      })
     );
+    openExport(doc, `zola-report-${hospitalName.replace(/\s+/g, "-").toLowerCase()}`);
   }
 
   return (
     <HospitalShell
       title="Reports & analytics"
       action={
-        <div className="header-action-group">
-          <button type="button" className="button compact ghost" onClick={exportCsv}>
-            <Download size={14} /> CSV
-          </button>
-          <button type="button" className="button compact" onClick={printReport}>
-            <Printer size={14} /> Print / PDF
-          </button>
-        </div>
+        <button type="button" className="button compact" onClick={openReportExport}>
+          <Download size={14} /> Export report
+        </button>
       }
     >
       <FacilityRequiredNotice />
@@ -211,6 +188,7 @@ export default function ReportsPage() {
           ]} />
         </div>
       </section>
+      {exportDialog}
     </HospitalShell>
   );
 }

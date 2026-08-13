@@ -1274,3 +1274,45 @@ body {
   .app-shell header, .mobile-menu, .pwa-install-banner, .header-actions, .side-nav-back { display: none !important; }
   .content { padding: 0; }
 }
+
+.document-export-backdrop { align-items: center; padding: 16px; }
+.document-export-dialog {
+  width: min(100%, 920px);
+  max-height: min(92vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(17, 24, 39, 0.22);
+}
+.document-export-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+.document-export-toolbar b { display: block; font-size: 14px; color: var(--navy); }
+.document-export-toolbar p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.document-export-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.document-export-preview-wrap {
+  overflow: auto;
+  padding: 18px;
+  background: #ebe6dc;
+}
+.document-export-preview {
+  max-width: 760px;
+  margin: 0 auto;
+  background: #f7f3eb;
+}
+
+@media (max-width: 720px) {
+  .document-export-backdrop { align-items: flex-end; padding: 0; }
+  .document-export-dialog { width: 100%; max-height: 94vh; border-radius: 16px 16px 0 0; }
+  .document-export-actions { width: 100%; }
+  .document-export-actions .button { flex: 1 1 auto; justify-content: center; }
+}

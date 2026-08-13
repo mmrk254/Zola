@@ -5,13 +5,15 @@ import Link from "next/link";
 import { CreditCard, Printer } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
-import { PaymentReceiptView, printPaymentReceipt } from "@/components/payment-receipt";
+import { PaymentReceiptView, openPaymentReceiptExport } from "@/components/payment-receipt";
+import { useDocumentExport } from "@/components/document-export-dialog";
 import { demoPayments, formatKes, latestInstallment, loadPayments, paymentStatusLabel } from "@/lib/demo-payments";
 import { PaymentRecord } from "@/lib/demo-payments";
 import { useWorkspace } from "@/lib/use-workspace";
 
 export default function StaffPaymentsPage() {
   const { session, activeHospitalId } = useWorkspace();
+  const { openExport, dialog: exportDialog } = useDocumentExport();
   const [payments, setPayments] = useState(demoPayments);
   const [selected, setSelected] = useState<PaymentRecord | null>(null);
 
@@ -77,8 +79,8 @@ export default function StaffPaymentsPage() {
                 </div>
                 <div className="payment-row-actions">
                   <button type="button" className="button compact ghost" onClick={() => setSelected(p)}>Receipt</button>
-                  <button type="button" className="button compact ghost" onClick={() => printPaymentReceipt(p, p.receiving_hospital, latestInstallment(p))}>
-                    <Printer size={14} />
+                  <button type="button" className="button compact ghost" onClick={() => openPaymentReceiptExport(openExport, p, p.receiving_hospital, latestInstallment(p))}>
+                    <Printer size={14} /> Export
                   </button>
                 </div>
               </article>
@@ -93,13 +95,15 @@ export default function StaffPaymentsPage() {
             <PaymentReceiptView payment={selected} installment={latestInstallment(selected)} hospitalName={selected.receiving_hospital} />
             <div className="form-actions">
               <button type="button" className="button ghost" onClick={() => setSelected(null)}>Close</button>
-              <button type="button" className="button" onClick={() => printPaymentReceipt(selected, selected.receiving_hospital, latestInstallment(selected))}>
-                <Printer size={15} /> Print / save PDF
+              <button type="button" className="button" onClick={() => openPaymentReceiptExport(openExport, selected, selected.receiving_hospital, latestInstallment(selected))}>
+                <Printer size={15} /> Export receipt
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {exportDialog}
     </Shell>
   );
 }

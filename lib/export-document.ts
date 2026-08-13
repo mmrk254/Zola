@@ -1,8 +1,74 @@
+import { buildDocumentHtml, documentToExcelRows, ExportDocument } from "./document-templates";
+
 export function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-    .join("\n");
+  const bom = "\uFEFF";
+  const csv = bom + rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  triggerDownload(blob, filename.endsWith(".csv") ? filename : `${filename}.csv`);
+}
+
+export async function downloadExcel(doc: ExportDocument, filename: string) {
+  const XLSX = await import("xlsx");
+  const rows = documentToExcelRows(doc);
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  worksheet["!cols"] = [{ wch: 22 }, { wch: 34 }, { wch: 22 }];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, doc.kind === "receipt" ? "Receipt" : "Report");
+  const out = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([out], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+  triggerDownload(blob, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
+}
+
+export function printDocument(doc: ExportDocument) {
+  const html = buildDocumentHtml(doc);
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(iframe);
+
+  const frameWindow = iframe.contentWindow;
+  const frameDoc = frameWindow?.document;
+  if (!frameDoc || !frameWindow) {
+    document.body.removeChild(iframe);
+    return;
+  }
+
+  frameDoc.open();
+  frameDoc.write(html);
+  frameDoc.close();
+
+  const runPrint = () => {
+    frameWindow.focus();
+    frameWindow.print();
+    window.setTimeout(() => {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }, 1000);
+  };
+
+  if (frameDoc.readyState === "complete") {
+    window.setTimeout(runPrint, 250);
+  } else {
+    iframe.onload = () => window.setTimeout(runPrint, 250);
+  }
+}
+
+export async function downloadPdf(element: HTMLElement, filename: string) {
+  const html2pdf = (await import("html2pdf.js")).default;
+  await html2pdf()
+    .set({
+      margin: [12, 12, 12, 12],
+      filename: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#f7f3eb" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    })
+    .from(element)
+    .save();
+}
+
+function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -11,23 +77,13 @@ export function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
+/** @deprecated Use DocumentExportDialog instead */
 export function printHtml(title: string, bodyHtml: string) {
-  const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-  if (!win) return;
-  win.document.write(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"/><title>${title}</title>
-<style>
-  body { font-family: Inter, Arial, sans-serif; color: #172230; margin: 32px; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  .meta { color: #5f6d7f; font-size: 12px; margin-bottom: 24px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-  th, td { border: 1px solid #e4ddce; padding: 8px 10px; font-size: 12px; text-align: left; }
-  th { background: #f2ead9; }
-  .totals { margin-top: 16px; font-size: 13px; }
-  .footer { margin-top: 28px; font-size: 11px; color: #6b7686; border-top: 1px solid #e4ddce; padding-top: 12px; }
-  @media print { body { margin: 16px; } }
-</style></head><body>${bodyHtml}</body></html>`);
-  win.document.close();
-  win.focus();
-  win.print();
+  printDocument({
+    kind: "report",
+    title,
+    subtitle: new Date().toLocaleString("en-KE"),
+    sections: [{ title: "Details", rows: [{ label: "Content", value: "See exported document" }] }],
+    footer: "Zola critical care coordination"
+  });
 }
