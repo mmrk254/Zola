@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
+import { requireAuthenticatedUser, resolveActingHospital, rolesForReferringAction } from "@/lib/auth";
 import { transitionReferral } from "@/lib/transition-referral";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,16 +10,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const supabase = getServiceClient();
   const { data: current } = await supabase
     .from("referral_cases")
-    .select("referring_facility_id, transfer_mode, receiving_facility_id")
+    .select("transfer_mode")
     .eq("id", id)
     .single();
 
-  const extraUpdate: Record<string, unknown> = {};
-  if (current && ["internal_onsite", "internal_offsite"].includes(current.transfer_mode)) {
-    extraUpdate.receiving_facility_id = current.receiving_facility_id ?? current.referring_facility_id;
+  if (!current || current.transfer_mode !== "internal_onsite") {
+    return NextResponse.json({ error: "This referral requires ambulance transport." }, { status: 409 });
   }
 
-  const result = await transitionReferral(id, "send", "searching", extraUpdate, {
+  try {
+    const context = await requireAuthenticatedUser();
+    resolveActingHospital(context, body.acting_hospital_id, rolesForReferringAction());
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
+  }
+
+  const result = await transitionReferral(id, "receive-onsite", "patient_received", {}, {
     acting_hospital_id: body.acting_hospital_id
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });

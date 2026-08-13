@@ -29,13 +29,14 @@ create table if not exists public.hospital_memberships (
 
 alter table public.hospital_memberships enable row level security;
 
-insert into public.users (id, name, email, network_admin)
-select id, 'Zola Network Admin', email, true
+insert into public.users (id, name, email, role, network_admin)
+select id, 'Zola Network Admin', email, 'network_admin', true
 from auth.users
 where email = 'admin@zola.local'
 on conflict (id) do update
 set name = excluded.name,
     email = excluded.email,
+    role = excluded.role,
     network_admin = true;
 
 insert into public.hospital_memberships (user_id, hospital_id, role, status)

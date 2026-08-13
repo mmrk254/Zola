@@ -1,15 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BedDouble, Clock3, Plus, RadioTower } from "lucide-react";
+import {
+  ArrowRight,
+  BedDouble,
+  Building2,
+  Clock3,
+  Inbox,
+  Plus,
+  RadioTower
+} from "lucide-react";
 import { Shell } from "@/components/shell";
 import { StatusBadge } from "@/components/status-badge";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { demoReferrals } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
-import { Referral } from "@/lib/types";
+import { PIPELINE_BUCKETS, Referral } from "@/lib/types";
+
+const QUICK_ACTIONS = [
+  { href: "/referrals/new", label: "New referral", icon: Plus },
+  { href: "/inbox", label: "Hospital inbox", icon: Inbox },
+  { href: "/notifications", label: "Notifications", icon: RadioTower },
+  { href: "/dashboard", label: "View all cases", icon: Building2 }
+];
 
 export default function Dashboard() {
   const { activeHospitalId } = useWorkspace();
@@ -40,6 +55,16 @@ export default function Dashboard() {
 
   const active = referrals.filter((r) => !["closed", "draft"].includes(r.status));
   const awaitingBed = referrals.filter((r) => ["searching", "ready_to_send"].includes(r.status)).length;
+  const criticalOpen = referrals.filter((r) => r.urgency === "critical" && !["closed", "draft"].includes(r.status)).length;
+
+  const pipeline = useMemo(
+    () =>
+      PIPELINE_BUCKETS.map((bucket) => ({
+        label: bucket.label,
+        count: referrals.filter((r) => bucket.statuses.includes(r.status)).length
+      })),
+    [referrals]
+  );
 
   return (
     <Shell
@@ -77,10 +102,35 @@ export default function Dashboard() {
           <strong>{loading ? "..." : awaitingBed}</strong>
         </article>
         <article>
-          <div className="metric-icon green"><BedDouble /></div>
-          <p>Care levels</p>
-          <strong>ICU · HDU · NICU</strong>
+          <div className="metric-icon red"><BedDouble /></div>
+          <p>Critical &amp; open</p>
+          <strong>{loading ? "..." : criticalOpen}</strong>
         </article>
+      </section>
+
+      <div className="quick-actions">
+        {QUICK_ACTIONS.map((action) => (
+          <Link key={action.href} href={action.href} className="quick-action">
+            <action.icon size={16} /> {action.label}
+          </Link>
+        ))}
+      </div>
+
+      <section className="panel pipeline-bar">
+        <div className="panel-heading">
+          <div>
+            <h2>Case pipeline</h2>
+            <p>Where every open referral currently sits</p>
+          </div>
+        </div>
+        <div className="pipeline-track">
+          {pipeline.map((stage) => (
+            <div className="pipeline-step" key={stage.label}>
+              <strong>{loading ? "..." : stage.count}</strong>
+              <span>{stage.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="panel">

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Activity,
-  Bell,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -17,6 +16,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
+import { NotificationBell } from "@/components/notification-bell";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -134,9 +134,7 @@ export function Shell({
           </div>
           <div className="header-actions">
             <FacilitySelector />
-            <button className="icon-button" aria-label="Notifications">
-              <Bell size={17} />
-            </button>
+            <NotificationBell />
             {action}
           </div>
         </header>

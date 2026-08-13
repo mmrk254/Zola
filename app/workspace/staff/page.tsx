@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Copy, Plus, UserPlus } from "lucide-react";
+import { Copy, Pencil, Plus, UserPlus } from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -21,7 +21,9 @@ export default function WorkspaceStaffPage() {
   const [error, setError] = useState<string | null>(null);
   const [createdPassword, setCreatedPassword] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState<StaffMember | null>(null);
   const [form, setForm] = useState({ name: "", email: "", role: "clinician", password: "" });
+  const [editForm, setEditForm] = useState({ name: "", role: "clinician", status: "active", password: "" });
 
   async function load() {
     if (!isSupabaseConfigured) {
@@ -64,6 +66,28 @@ export default function WorkspaceStaffPage() {
     }
   }
 
+  async function updateStaff(e: FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/staff/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editForm, ...actingPayload })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not update staff");
+      setEditing(null);
+      await load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <HospitalShell title="Staff accounts">
       <FacilityRequiredNotice />
@@ -85,7 +109,7 @@ export default function WorkspaceStaffPage() {
           <div className="panel-heading">
             <div>
               <h2>Team members</h2>
-              <p>Staff who can sign in via Create a referral on the homepage</p>
+              <p>Clinicians create referrals. Hospital staff handle inbox accept/decline. Admins manage the workspace.</p>
             </div>
           </div>
           {loading ? (
@@ -100,7 +124,24 @@ export default function WorkspaceStaffPage() {
                     <strong>{member.users?.name ?? "Unknown"}</strong>
                     <small>{member.users?.email}</small>
                   </div>
-                  <span className="role-pill">{member.role.replace("_", " ")}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="role-pill">{member.role.replace("_", " ")}</span>
+                    <button
+                      className="button ghost compact"
+                      type="button"
+                      onClick={() => {
+                        setEditing(member);
+                        setEditForm({
+                          name: member.users?.name ?? "",
+                          role: member.role,
+                          status: member.status,
+                          password: ""
+                        });
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -126,9 +167,9 @@ export default function WorkspaceStaffPage() {
             <label className="auth-field">
               <span>Role</span>
               <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-                <option value="clinician">Clinician</option>
-                <option value="hospital_staff">Hospital staff</option>
-                <option value="hospital_admin">Hospital admin</option>
+                <option value="clinician">Clinician — create &amp; manage referrals</option>
+                <option value="hospital_staff">Hospital staff — inbox accept/decline</option>
+                <option value="hospital_admin">Hospital admin — full workspace</option>
               </select>
             </label>
             <label className="auth-field">
@@ -141,6 +182,53 @@ export default function WorkspaceStaffPage() {
           </form>
         </section>
       </div>
+
+      {editing && (
+        <div className="modal-backdrop" onClick={() => setEditing(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Edit staff member</h2>
+            <p>{editing.users?.email}</p>
+            <form onSubmit={updateStaff} className="auth-form">
+              <label className="auth-field">
+                <span>Full name</span>
+                <input required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+              </label>
+              <label className="auth-field">
+                <span>Role</span>
+                <select value={editForm.role} onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}>
+                  <option value="clinician">Clinician</option>
+                  <option value="hospital_staff">Hospital staff</option>
+                  <option value="hospital_admin">Hospital admin</option>
+                </select>
+              </label>
+              <label className="auth-field">
+                <span>Status</span>
+                <select value={editForm.status} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}>
+                  <option value="active">Active</option>
+                  <option value="revoked">Revoked</option>
+                </select>
+              </label>
+              <label className="auth-field">
+                <span>New password (optional)</span>
+                <input
+                  minLength={8}
+                  value={editForm.password}
+                  onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Leave blank to keep current"
+                />
+              </label>
+              <div className="form-actions">
+                <button className="button ghost" type="button" onClick={() => setEditing(null)}>
+                  Cancel
+                </button>
+                <button className="button" type="submit" disabled={submitting}>
+                  Save changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </HospitalShell>
   );
 }

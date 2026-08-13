@@ -37,10 +37,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (view === "inbox") {
+      const inboxHospital = hospitalId && hospitalIds.includes(hospitalId) ? hospitalId : hospitalIds[0];
       query = query.eq("status", "searching");
-      if (!context.networkAdmin) {
-        query = query.not("referring_facility_id", "in", `(${hospitalIds.join(",")})`);
-      }
+      query = query.or(
+        `receiving_facility_id.eq.${inboxHospital},and(receiving_facility_id.is.null,referring_facility_id.neq.${inboxHospital})`
+      );
     } else if (hospitalId) {
       if (!hospitalIds.includes(hospitalId)) {
         return NextResponse.json({ error: "You do not have access to this hospital." }, { status: 403 });
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceClient();
 
-  const { patient_initials, care_level, urgency, clinical_summary } = body;
+  const { patient_initials, care_level, urgency, clinical_summary, transfer_mode, patient_location } = body;
 
   if (!patient_initials || !care_level) {
     return NextResponse.json(
@@ -92,6 +93,16 @@ export async function POST(request: NextRequest) {
 
   const reference = nextReference((count ?? 0) + 1);
 
+  const mode = ["external", "internal_onsite", "internal_offsite"].includes(transfer_mode)
+    ? transfer_mode
+    : "external";
+
+  if (mode === "internal_offsite" && !patient_location?.trim()) {
+    return NextResponse.json({ error: "Patient location is required for off-site internal referrals." }, { status: 400 });
+  }
+
+  const receivingOnCreate = ["internal_onsite", "internal_offsite"].includes(mode) ? actingHospitalId : null;
+
   const { data: referral, error } = await supabase
     .from("referral_cases")
     .insert({
@@ -100,7 +111,10 @@ export async function POST(request: NextRequest) {
       care_level,
       urgency: urgency ?? "urgent",
       referring_facility_id: actingHospitalId,
+      receiving_facility_id: receivingOnCreate,
       clinical_summary: clinical_summary ?? null,
+      transfer_mode: mode,
+      patient_location: mode === "internal_offsite" ? patient_location.trim() : null,
       status: "draft",
       created_by: context!.user.id
     })

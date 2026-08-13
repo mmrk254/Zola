@@ -15,7 +15,7 @@ export type AuthenticatedUserContext = {
   memberships: ActiveMembership[];
 };
 
-const REFERRING_ACTION_ROLES: MembershipRole[] = ["clinician", "hospital_admin"];
+const REFERRING_ACTION_ROLES: MembershipRole[] = ["clinician", "hospital_staff", "hospital_admin"];
 const RECEIVING_ACTION_ROLES: MembershipRole[] = ["clinician", "hospital_staff", "hospital_admin"];
 
 export async function getCurrentUserContext(): Promise<AuthenticatedUserContext | null> {

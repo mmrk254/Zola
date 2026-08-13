@@ -12,6 +12,7 @@ import { ReferralStatus } from "@/lib/types";
 type TransitionOptions = {
   acting_hospital_id?: string;
   receiving_facility_id?: string;
+  notes?: string;
 };
 
 function hospitalForAction(
@@ -30,6 +31,26 @@ function rolesForAction(action: string) {
   return rolesForReferringAction();
 }
 
+export async function releaseAmbulanceForReferral(referralId: string) {
+  const supabase = getServiceClient();
+  const { data: referral } = await supabase
+    .from("referral_cases")
+    .select("ambulance_id")
+    .eq("id", referralId)
+    .maybeSingle();
+
+  if (!referral?.ambulance_id) return;
+
+  await supabase
+    .from("hospital_ambulances")
+    .update({
+      status: "available",
+      current_referral_id: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", referral.ambulance_id);
+}
+
 export async function transitionReferral(
   id: string,
   action: string,
@@ -41,12 +62,16 @@ export async function transitionReferral(
 
   const { data: current, error: fetchError } = await supabase
     .from("referral_cases")
-    .select("status, referring_facility_id, receiving_facility_id")
+    .select("status, referring_facility_id, receiving_facility_id, transfer_mode")
     .eq("id", id)
     .single();
 
   if (fetchError || !current) {
     return { error: "Referral not found", status: 404 as const };
+  }
+
+  if (action === "receive-onsite" && current.transfer_mode !== "internal_onsite") {
+    return { error: "On-site confirmation only applies to internal on-site referrals.", status: 409 as const };
   }
 
   if (!canTransition(action, current.status)) {
@@ -85,8 +110,13 @@ export async function transitionReferral(
     from_status: current.status,
     to_status: toStatus,
     actor_user_id: context.user.id,
-    facility_id: actorHospitalId
+    facility_id: actorHospitalId,
+    notes: options.notes ?? null
   });
+
+  if (toStatus === "patient_received" || toStatus === "closed") {
+    await releaseAmbulanceForReferral(id);
+  }
 
   return { referral, status: 200 as const };
 }

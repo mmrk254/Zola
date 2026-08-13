@@ -8,6 +8,7 @@ import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
 import { demoHospitals } from "@/lib/demo-data";
+import { TransferMode } from "@/lib/types";
 
 const CONSENT_ITEMS = [
   "Patient or legal representative has been informed of the referral.",
@@ -18,7 +19,6 @@ const CONSENT_ITEMS = [
 
 export default function NewReferral() {
   const { session, activeHospitalId, actingPayload } = useWorkspace();
-  const [hospitals, setHospitals] = useState(demoHospitals);
   const [consent, setConsent] = useState([false, false, false, false]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<{ id: string; reference: string } | null>(null);
@@ -28,34 +28,15 @@ export default function NewReferral() {
     patient_initials: "",
     care_level: "",
     urgency: "urgent",
-    referring_facility_id: "",
-    clinical_summary: ""
+    clinical_summary: "",
+    transfer_mode: "external" as TransferMode,
+    patient_location: ""
   });
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    fetch("/api/hospitals")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.hospitals?.length) {
-          setHospitals(data.hospitals);
-          const defaultId = activeHospitalId ?? data.hospitals[0].id;
-          setForm((f) => ({ ...f, referring_facility_id: defaultId }));
-        }
-      })
-      .catch(() => {});
-  }, [activeHospitalId]);
-
-  useEffect(() => {
-    if (activeHospitalId) {
-      setForm((f) => ({ ...f, referring_facility_id: activeHospitalId }));
-    }
-  }, [activeHospitalId]);
 
   const needsFacility =
     session &&
     !session.networkAdmin &&
-    session.memberships.filter((m) => m.status === "active" && m.role !== "hospital_staff").length > 1;
+    session.memberships.filter((m) => m.status === "active").length > 1;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -65,12 +46,16 @@ export default function NewReferral() {
       setError("Connect Supabase to save real referrals. This form is read-only in demo mode.");
       return;
     }
-    if (!form.care_level || !form.referring_facility_id) {
-      setError("Select a care level and referring facility.");
+    if (!form.care_level) {
+      setError("Select a care level.");
       return;
     }
     if (needsFacility && !activeHospitalId) {
       setError("Select which facility you are acting for.");
+      return;
+    }
+    if (form.transfer_mode === "internal_offsite" && !form.patient_location.trim()) {
+      setError("Enter the patient's current location for pickup.");
       return;
     }
     if (!consent.every(Boolean)) {
@@ -84,8 +69,13 @@ export default function NewReferral() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          acting_hospital_id: activeHospitalId ?? form.referring_facility_id
+          patient_initials: form.patient_initials,
+          care_level: form.care_level,
+          urgency: form.urgency,
+          clinical_summary: form.clinical_summary,
+          transfer_mode: form.transfer_mode,
+          patient_location: form.transfer_mode === "internal_offsite" ? form.patient_location : null,
+          acting_hospital_id: activeHospitalId
         })
       });
       const created = await createRes.json();
@@ -174,25 +164,6 @@ export default function NewReferral() {
                   <option value="routine">Routine</option>
                 </select>
               </label>
-              {session?.networkAdmin && (
-                <label>
-                  Referring facility
-                  <select
-                    required
-                    value={form.referring_facility_id}
-                    onChange={(e) => setForm((f) => ({ ...f, referring_facility_id: e.target.value }))}
-                  >
-                    <option value="" disabled>
-                      Select facility
-                    </option>
-                    {hospitals.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
               <label className="full">
                 Clinical summary
                 <textarea
@@ -209,6 +180,65 @@ export default function NewReferral() {
           <section className="form-card">
             <div className="form-heading">
               <span>02</span>
+              <div>
+                <h2>Transfer type</h2>
+                <p>Choose whether the patient is already on-site or needs pickup.</p>
+              </div>
+            </div>
+            <div className="transfer-options">
+              <label className={`transfer-option ${form.transfer_mode === "external" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="transfer_mode"
+                  checked={form.transfer_mode === "external"}
+                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "external", patient_location: "" }))}
+                />
+                <div>
+                  <b>External referral</b>
+                  <small>Broadcast to network hospitals — they must accept before you continue.</small>
+                </div>
+              </label>
+              <label className={`transfer-option ${form.transfer_mode === "internal_onsite" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="transfer_mode"
+                  checked={form.transfer_mode === "internal_onsite"}
+                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "internal_onsite", patient_location: "" }))}
+                />
+                <div>
+                  <b>My hospital — patient on-site</b>
+                  <small>Patient is already at your facility. No ambulance needed after acceptance.</small>
+                </div>
+              </label>
+              <label className={`transfer-option ${form.transfer_mode === "internal_offsite" ? "selected" : ""}`}>
+                <input
+                  type="radio"
+                  name="transfer_mode"
+                  checked={form.transfer_mode === "internal_offsite"}
+                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "internal_offsite" }))}
+                />
+                <div>
+                  <b>My hospital — off-site pickup</b>
+                  <small>Patient is at another location — dispatch your ambulance after family confirms.</small>
+                </div>
+              </label>
+            </div>
+            {form.transfer_mode === "internal_offsite" && (
+              <label style={{ marginTop: 12 }}>
+                Patient location
+                <input
+                  required
+                  placeholder="e.g. Ward 3B, Donholm ERC outreach clinic"
+                  value={form.patient_location}
+                  onChange={(e) => setForm((f) => ({ ...f, patient_location: e.target.value }))}
+                />
+              </label>
+            )}
+          </section>
+
+          <section className="form-card">
+            <div className="form-heading">
+              <span>03</span>
               <div>
                 <h2>Consent checkpoint</h2>
                 <p>All confirmations are required before the referral can be sent.</p>

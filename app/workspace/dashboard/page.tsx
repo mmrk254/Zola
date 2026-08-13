@@ -1,36 +1,77 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BedDouble,
+  Building2,
+  FileBarChart2,
+  Inbox,
+  Truck,
+  Users
+} from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
 import { useWorkspace } from "@/lib/use-workspace";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { demoCapacity, demoReferrals } from "@/lib/demo-data";
+import { CapacitySnapshot, PIPELINE_BUCKETS, Referral } from "@/lib/types";
+
+const QUICK_ACTIONS = [
+  { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
+  { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
+  { href: "/inbox", label: "Referral inbox", icon: Inbox },
+  { href: "/workspace/staff", label: "Staff accounts", icon: Users },
+  { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 }
+];
 
 export default function HospitalDashboard() {
   const { session, activeHospitalId } = useWorkspace();
   const [stats, setStats] = useState({ referrals: 0, staff: 0, searching: 0 });
+  const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
+  const [capacity, setCapacity] = useState<CapacitySnapshot[]>(demoCapacity);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     const hospitalParam = activeHospitalId ? `?hospital_id=${activeHospitalId}` : "";
     Promise.all([
       fetch(`/api/referrals${hospitalParam}`).then((r) => r.json()),
-      fetch(`/api/staff${hospitalParam}`).then((r) => r.json())
-    ]).then(([refData, staffData]) => {
-      const refs = refData.referrals ?? [];
-      setStats({
-        referrals: refs.length,
-        staff: staffData.staff?.length ?? 0,
-        searching: refs.filter((r: { status: string }) => r.status === "searching").length
-      });
-    });
+      fetch(`/api/staff${hospitalParam}`).then((r) => r.json()),
+      activeHospitalId
+        ? fetch(`/api/hospitals/${activeHospitalId}/capacity`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
+        : Promise.resolve(null)
+    ])
+      .then(([refData, staffData, capacityData]) => {
+        const refs = refData.referrals ?? [];
+        setReferrals(refs);
+        setStats({
+          referrals: refs.length,
+          staff: staffData.staff?.length ?? 0,
+          searching: refs.filter((r: { status: string }) => r.status === "searching").length
+        });
+        if (capacityData?.capacity) setCapacity(capacityData.capacity);
+      })
+      .finally(() => setLoading(false));
   }, [activeHospitalId]);
 
   const hospitalName =
     session?.memberships.find((m) => m.hospital_id === activeHospitalId)?.hospital_name ??
     session?.memberships[0]?.hospital_name ??
     "Your facility";
+
+  const pipeline = useMemo(
+    () =>
+      PIPELINE_BUCKETS.map((bucket) => ({
+        label: bucket.label,
+        count: referrals.filter((r) => bucket.statuses.includes(r.status)).length
+      })),
+    [referrals]
+  );
+
+  const facilityOpen = capacity.every((c) => c.facility_status !== "closed");
 
   return (
     <HospitalShell title="Hospital overview">
@@ -40,23 +81,81 @@ export default function HospitalDashboard() {
             <p className="eyebrow">Facility</p>
             <h2>{hospitalName}</h2>
           </div>
-          <span className="role-pill">Hospital admin</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className={`facility-status-pill ${facilityOpen ? "open" : "at_capacity"}`}>
+              <span className={`online-dot ${facilityOpen ? "" : "offline"}`} />
+              {facilityOpen ? "Accepting referrals" : "Limited capacity"}
+            </span>
+            <span className="role-pill">Hospital admin</span>
+          </div>
         </header>
 
         <div className="hospital-dash-stats">
           <article>
             <p>Referrals</p>
-            <strong>{stats.referrals}</strong>
+            <strong>{loading ? "..." : stats.referrals}</strong>
           </article>
           <article>
             <p>Staff</p>
-            <strong>{stats.staff}</strong>
+            <strong>{loading ? "..." : stats.staff}</strong>
           </article>
           <article>
             <p>Searching</p>
-            <strong>{stats.searching}</strong>
+            <strong>{loading ? "..." : stats.searching}</strong>
           </article>
         </div>
+
+        <section className="panel" style={{ maxWidth: "none" }}>
+          <div className="panel-heading">
+            <div>
+              <h2>Bed capacity</h2>
+              <p>Live availability by care level</p>
+            </div>
+            <Link href="/workspace/capacity" className="text-link">
+              Manage capacity <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="capacity-grid">
+            {capacity.map((c) => (
+              <div className="capacity-card" key={c.care_level}>
+                <h3>{c.care_level}</h3>
+                <div className="capacity-count">
+                  <strong style={{ fontSize: 22 }}>{c.available_beds}</strong>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>beds free</span>
+                </div>
+                <span className={`facility-status-pill ${c.facility_status}`}>
+                  {c.facility_status.replace("_", " ")}
+                </span>
+                <span className="capacity-updated">Updated {c.updated_at}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="quick-actions" style={{ maxWidth: "none" }}>
+          {QUICK_ACTIONS.map((action) => (
+            <Link key={action.href} href={action.href} className="quick-action">
+              <action.icon size={16} /> {action.label}
+            </Link>
+          ))}
+        </div>
+
+        <section className="panel pipeline-bar" style={{ maxWidth: "none" }}>
+          <div className="panel-heading">
+            <div>
+              <h2>Referral pipeline</h2>
+              <p>Cases involving your facility, by stage</p>
+            </div>
+          </div>
+          <div className="pipeline-track">
+            {pipeline.map((stage) => (
+              <div className="pipeline-step" key={stage.label}>
+                <strong>{loading ? "..." : stage.count}</strong>
+                <span>{stage.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="hospital-dash-actions">
           <Link href="/workspace/staff" className="hospital-dash-link">

@@ -18,6 +18,7 @@ create type referral_status as enum (
 
 create type care_level as enum ('ICU', 'HDU', 'NICU');
 create type urgency_level as enum ('critical', 'urgent', 'routine');
+create type facility_status as enum ('open', 'at_capacity', 'closed');
 
 create table hospitals (
   id uuid primary key default gen_random_uuid(),
@@ -86,6 +87,15 @@ create table family_confirmations (
   confirmed_at timestamptz not null default now()
 );
 
+create table hospital_capacity (
+  hospital_id uuid not null references hospitals(id) on delete cascade,
+  care_level care_level not null,
+  available_beds integer not null default 0 check (available_beds >= 0),
+  facility_status facility_status not null default 'open',
+  updated_at timestamptz not null default now(),
+  primary key (hospital_id, care_level)
+);
+
 create index on referral_cases (status);
 create index on referral_cases (referring_facility_id);
 create index on referral_cases (receiving_facility_id);
@@ -99,6 +109,7 @@ alter table hospital_memberships enable row level security;
 alter table referral_cases enable row level security;
 alter table referral_events enable row level security;
 alter table family_confirmations enable row level security;
+alter table hospital_capacity enable row level security;
 
 create policy "Public read access" on hospitals for select using (true);
 create policy "Public read access" on referral_cases for select using (true);

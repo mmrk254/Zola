@@ -12,6 +12,9 @@ export type ReferralStatus =
 
 export type CareLevel = "ICU" | "HDU" | "NICU";
 export type Urgency = "critical" | "urgent" | "routine";
+export type FacilityStatus = "open" | "at_capacity" | "closed";
+export type TransferMode = "external" | "internal_onsite" | "internal_offsite";
+export type AmbulanceStatus = "available" | "dispatched";
 
 export type Hospital = {
   id: string;
@@ -33,6 +36,9 @@ export type Referral = {
   receiving_facility?: string;
   clinical_summary?: string;
   consent_obtained: boolean;
+  transfer_mode?: TransferMode;
+  patient_location?: string | null;
+  ambulance_id?: string | null;
   created_at: string;
 };
 
@@ -42,6 +48,7 @@ export type ReferralEvent = {
   from_status: ReferralStatus | null;
   to_status: ReferralStatus;
   actor_user_id: string | null;
+  notes?: string | null;
   created_at: string;
 };
 
@@ -55,6 +62,37 @@ export type FamilyConfirmation = {
   confirmed_at: string;
 };
 
+export type Ambulance = {
+  id: string;
+  hospital_id: string;
+  plate_number: string;
+  driver_name: string;
+  driver_phone: string | null;
+  status: AmbulanceStatus;
+  current_referral_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ---- New: bed & capacity management ----
+export type CapacitySnapshot = {
+  hospital_id: string;
+  care_level: CareLevel;
+  available_beds: number;
+  facility_status: FacilityStatus;
+  updated_at: string;
+};
+
+// ---- New: notifications ----
+export type NotificationItem = {
+  id: string;
+  referralId: string;
+  reference: string;
+  message: string;
+  status: ReferralStatus;
+  created_at: string;
+};
+
 export const REFERRAL_STEPS: { status: ReferralStatus; label: string }[] = [
   { status: "draft", label: "Draft created" },
   { status: "consent_pending", label: "Consent checkpoint" },
@@ -66,4 +104,14 @@ export const REFERRAL_STEPS: { status: ReferralStatus; label: string }[] = [
   { status: "patient_en_route", label: "Patient en route" },
   { status: "patient_received", label: "Patient received" },
   { status: "closed", label: "Case closed" }
+];
+
+// Buckets used by the pipeline overview on both dashboards, and by the
+// reporting module's status breakdown.
+export const PIPELINE_BUCKETS: { label: string; statuses: ReferralStatus[] }[] = [
+  { label: "Draft / consent", statuses: ["draft", "consent_pending"] },
+  { label: "Searching", statuses: ["ready_to_send", "searching"] },
+  { label: "Accepted", statuses: ["hospital_accepted", "family_confirmed"] },
+  { label: "In transit", statuses: ["ambulance_arranged", "patient_en_route"] },
+  { label: "Closed", statuses: ["patient_received", "closed"] }
 ];

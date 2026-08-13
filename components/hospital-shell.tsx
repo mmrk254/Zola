@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Activity,
+  BedDouble,
   Building2,
   ChevronLeft,
   ChevronRight,
+  FileBarChart2,
   LayoutDashboard,
   Menu,
-  Settings,
+  Truck,
   Users,
   X
 } from "lucide-react";
@@ -19,13 +21,17 @@ import { FacilitySelector } from "@/components/facility-selector";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
-  { href: "/workspace/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/workspace/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
+  { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
   { href: "/workspace/staff", label: "Staff accounts", icon: Users },
-  { href: "/workspace/settings", label: "Settings", icon: Settings }
+  { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 },
+  { href: "/workspace/settings", label: "Facility settings", icon: Building2 }
 ];
 
 function Nav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   return (
     <>
       <Link href="/workspace" className="brand" onClick={onNavigate}>
@@ -37,7 +43,7 @@ function Nav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () =
           <Link
             key={item.href}
             href={item.href}
-            className={pathname === item.href ? "active" : ""}
+            className={isActive(item.href) ? "active" : ""}
             onClick={onNavigate}
             title={item.label}
           >

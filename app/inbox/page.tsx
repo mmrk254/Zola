@@ -16,10 +16,13 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [errored, setErrored] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [declineId, setDeclineId] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
 
-  useEffect(() => {
+  function loadInbox() {
     if (!isSupabaseConfigured) return;
-    fetch("/api/referrals?view=inbox")
+    const params = activeHospitalId ? `?view=inbox&hospital_id=${activeHospitalId}` : "?view=inbox";
+    fetch(`/api/referrals${params}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.referrals) {
@@ -37,9 +40,14 @@ export default function InboxPage() {
       })
       .catch(() => setErrored(true))
       .finally(() => setLoading(false));
-  }, []);
+  }
 
-  async function respond(referralId: string, endpoint: "accept" | "decline") {
+  useEffect(() => {
+    loadInbox();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeHospitalId]);
+
+  async function respond(referralId: string, endpoint: "accept" | "decline", reason?: string) {
     if (!activeHospitalId) return;
     setBusyId(referralId);
     try {
@@ -48,13 +56,16 @@ export default function InboxPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...actingPayload,
-          receiving_facility_id: activeHospitalId
+          receiving_facility_id: activeHospitalId,
+          ...(reason ? { reason } : {})
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Action failed");
       setReferrals((current) => current.filter((r) => r.id !== referralId));
-    } catch {
+      setDeclineId(null);
+      setDeclineReason("");
+    } catch (err: any) {
       setErrored(true);
     } finally {
       setBusyId(null);
@@ -68,7 +79,7 @@ export default function InboxPage() {
       {errored && (
         <div className="notice error">
           <RadioTower size={17} />
-          <span>Could not load inbox referrals.</span>
+          <span>Could not complete the action. Check permissions and try again.</span>
         </div>
       )}
 
@@ -76,7 +87,7 @@ export default function InboxPage() {
         <div className="panel-heading">
           <div>
             <h2>Incoming referrals</h2>
-            <p>Broadcast cases awaiting your facility response</p>
+            <p>Accept or decline with a reason — referring staff can only continue after you accept.</p>
           </div>
           <Link href="/dashboard" className="text-link">
             Back to dashboard <ArrowRight size={15} />
@@ -117,7 +128,7 @@ export default function InboxPage() {
                     className="button ghost"
                     type="button"
                     disabled={!activeHospitalId || busyId === r.id}
-                    onClick={() => respond(r.id, "decline")}
+                    onClick={() => setDeclineId(r.id)}
                   >
                     Decline
                   </button>
@@ -127,6 +138,34 @@ export default function InboxPage() {
           </div>
         )}
       </section>
+
+      {declineId && (
+        <div className="modal-backdrop" onClick={() => setDeclineId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Decline referral</h2>
+            <p>Give the referring team a clear reason (e.g. no beds, wrong care level).</p>
+            <textarea
+              rows={3}
+              placeholder="Reason for declining"
+              value={declineReason}
+              onChange={(e) => setDeclineReason(e.target.value)}
+            />
+            <div className="form-actions">
+              <button className="button ghost" type="button" onClick={() => setDeclineId(null)}>
+                Cancel
+              </button>
+              <button
+                className="button danger"
+                type="button"
+                disabled={!declineReason.trim() || busyId === declineId}
+                onClick={() => respond(declineId, "decline", declineReason.trim())}
+              >
+                Decline referral
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Shell>
   );
 }

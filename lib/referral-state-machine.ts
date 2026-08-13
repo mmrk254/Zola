@@ -11,6 +11,7 @@ export const ALLOWED_TRANSITIONS: Record<string, ReferralStatus[]> = {
   decline: ["searching"],
   "family-confirmation": ["hospital_accepted"],
   ambulance: ["family_confirmed"],
+  "receive-onsite": ["family_confirmed"],
   "en-route": ["ambulance_arranged"],
   received: ["patient_en_route"],
   close: ["patient_received"]
