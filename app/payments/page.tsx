@@ -6,7 +6,7 @@ import { CreditCard, Printer } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { PaymentReceiptView, printPaymentReceipt } from "@/components/payment-receipt";
-import { demoPayments, formatKes, loadPayments, paymentStatusLabel } from "@/lib/demo-payments";
+import { demoPayments, formatKes, latestInstallment, loadPayments, paymentStatusLabel } from "@/lib/demo-payments";
 import { PaymentRecord } from "@/lib/demo-payments";
 import { useWorkspace } from "@/lib/use-workspace";
 
@@ -41,7 +41,7 @@ export default function StaffPaymentsPage() {
       <FacilityRequiredNotice />
       <div className="notice warn">
         <CreditCard size={16} />
-        <span>Demo ledger for referral bed fees and transfers. Your hospital admin records payments in the workspace.</span>
+        <span>Payment status for referrals involving your hospital. Receiving hospitals record payments in their workspace.</span>
       </div>
 
       <section className="metrics compact-metrics ops-metrics">
@@ -54,7 +54,7 @@ export default function StaffPaymentsPage() {
         <div className="panel-heading">
           <div>
             <h2>Referral payment status</h2>
-            <p>Bed acceptance fees and balances for cases involving {hospitalName}</p>
+            <p>Bed fees and balances for cases involving {hospitalName}</p>
           </div>
         </div>
         <div className="payment-ledger">
@@ -66,15 +66,18 @@ export default function StaffPaymentsPage() {
                 <div>
                   <Link href={`/referrals/${p.referral_id}`} className="ref-link">{p.referral_reference}</Link>
                   <p>{p.referring_hospital} → {p.receiving_hospital}</p>
-                  <small>{p.patient_initials} · {paymentStatusLabel(p.status)}</small>
+                  <small>
+                    {p.patient_initials} · {paymentStatusLabel(p.status)}
+                    {p.balance_kes > 0 ? ` · ${formatKes(p.balance_kes)} due` : ""}
+                  </small>
                 </div>
                 <div className="payment-row-amounts">
                   <span>{formatKes(p.amount_paid_kes)}</span>
-                  <small>balance {formatKes(p.balance_kes)}</small>
+                  <small>of {formatKes(p.amount_due_kes)}</small>
                 </div>
                 <div className="payment-row-actions">
                   <button type="button" className="button compact ghost" onClick={() => setSelected(p)}>Receipt</button>
-                  <button type="button" className="button compact ghost" onClick={() => printPaymentReceipt(p, p.receiving_hospital)}>
+                  <button type="button" className="button compact ghost" onClick={() => printPaymentReceipt(p, p.receiving_hospital, latestInstallment(p))}>
                     <Printer size={14} />
                   </button>
                 </div>
@@ -87,10 +90,10 @@ export default function StaffPaymentsPage() {
       {selected && (
         <div className="modal-backdrop" onClick={() => setSelected(null)}>
           <div className="modal payment-modal" onClick={(e) => e.stopPropagation()}>
-            <PaymentReceiptView payment={selected} hospitalName={selected.receiving_hospital} />
+            <PaymentReceiptView payment={selected} installment={latestInstallment(selected)} hospitalName={selected.receiving_hospital} />
             <div className="form-actions">
               <button type="button" className="button ghost" onClick={() => setSelected(null)}>Close</button>
-              <button type="button" className="button" onClick={() => printPaymentReceipt(selected, selected.receiving_hospital)}>
+              <button type="button" className="button" onClick={() => printPaymentReceipt(selected, selected.receiving_hospital, latestInstallment(selected))}>
                 <Printer size={15} /> Print / save PDF
               </button>
             </div>

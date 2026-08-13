@@ -213,11 +213,31 @@ input:disabled, select:disabled, textarea:disabled { background: var(--cream-war
 .modal { background: var(--cream); border-radius: 12px; padding: 26px; max-width: 440px; width: 100%; position: relative; }
 .modal-close { position: absolute; top: 12px; right: 12px; border: 0; background: transparent; cursor: pointer; color: var(--muted); }
 .transfer-options { display: grid; gap: 10px; }
-.transfer-option { display: flex; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #fff; }
+.transfer-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+}
 .transfer-option.selected { border-color: rgba(15,141,138,0.35); background: #f4faf9; }
-.transfer-option input { margin-top: 4px; }
-.transfer-option b { display: block; font-size: 13px; margin-bottom: 2px; }
-.transfer-option small { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.transfer-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  flex-shrink: 0;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+.transfer-option > div { min-width: 0; }
+.transfer-option b { display: block; font-size: 13px; margin-bottom: 4px; color: var(--navy); }
+.transfer-option small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .ambulance-preview { margin: 12px 0; padding: 12px; border-radius: 8px; background: var(--cream-warm); font-size: 13px; }
 .ambulance-preview p { margin: 0 0 4px; }
 .role-pill.warn { background: #fbf2df; color: #8a5a00; }
@@ -1231,6 +1251,12 @@ body {
 .receipt-table td:last-child { text-align: right; font-weight: 700; }
 .receipt-notes { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .receipt-footer { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.receipt-history { margin-top: 14px; font-size: 12px; }
+.receipt-history ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+.pricing-preview { padding: 12px 14px; border-radius: 10px; background: var(--cream-warm); border: 1px solid var(--line); font-size: 13px; }
+.pricing-preview ul { margin: 8px 0; padding-left: 18px; color: var(--muted); }
+.pricing-preview p { margin: 0 0 4px; }
+.payment-row.awaiting { border-color: rgba(15, 141, 138, 0.28); background: #f4faf9; }
 .report-kpi-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
 .report-kpi-list div { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--cream-warm); }
 .report-kpi-list dt { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
