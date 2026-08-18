@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceClient();
 
-  const { patient_initials, care_level, urgency, clinical_summary, transfer_mode, patient_location } = body;
+  const { patient_initials, care_level, urgency, clinical_summary, transfer_mode, patient_location, receiving_facility_id } = body;
 
   if (!patient_initials || !care_level) {
     return NextResponse.json(
@@ -113,7 +113,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Patient location is required for off-site internal referrals." }, { status: 400 });
   }
 
-  const receivingOnCreate = ["internal_onsite", "internal_offsite"].includes(mode) ? actingHospitalId : null;
+  const receivingOnCreate = receiving_facility_id
+    ? receiving_facility_id
+    : ["internal_onsite", "internal_offsite"].includes(mode)
+      ? actingHospitalId
+      : null;
+
+  const locationValue = patient_location?.trim() || null;
 
   const { data: referral, error } = await supabase
     .from("referral_cases")
@@ -126,7 +132,7 @@ export async function POST(request: NextRequest) {
       receiving_facility_id: receivingOnCreate,
       clinical_summary: clinical_summary ?? null,
       transfer_mode: mode,
-      patient_location: mode === "internal_offsite" ? patient_location.trim() : null,
+      patient_location: locationValue,
       status: "draft",
       created_by: context!.user.id
     })

@@ -5,15 +5,14 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });
 
   const protectedPaths = [
+    "/home",
     "/dashboard",
     "/referrals",
     "/inbox",
-    "/payments",
     "/notifications",
     "/workspace/dashboard",
     "/workspace/staff",
     "/workspace/settings",
-    "/workspace/payments",
     "/workspace/reports",
     "/workspace/capacity",
     "/workspace/ambulances",
@@ -73,7 +72,7 @@ export async function middleware(request: NextRequest) {
     const isHospital = request.nextUrl.pathname.startsWith("/workspace/");
     const loginPath = isHospital ? "/workspace/login" : "/login";
     const redirectUrl = new URL(loginPath, request.url);
-    if (!isHospital && request.nextUrl.pathname.startsWith("/referrals")) {
+    if (!isHospital && (request.nextUrl.pathname.startsWith("/referrals") || request.nextUrl.pathname.startsWith("/home"))) {
       redirectUrl.searchParams.set("next", request.nextUrl.pathname);
     }
     return NextResponse.redirect(redirectUrl);
@@ -84,22 +83,21 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/home/:path*",
     "/dashboard/:path*",
     "/referrals/:path*",
     "/inbox/:path*",
-    "/payments/:path*",
     "/notifications/:path*",
     "/workspace/dashboard/:path*",
     "/workspace/staff/:path*",
     "/workspace/settings/:path*",
-    "/workspace/payments/:path*",
     "/workspace/reports/:path*",
     "/workspace/capacity/:path*",
     "/workspace/ambulances/:path*",
     "/workspace/notifications/:path*",
     "/api/referrals/:path*",
     "/api/me",
-    "/api/hospitals",
+    "/api/hospitals/:path*",
     "/api/staff"
   ]
 };

@@ -8,7 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardPlus,
-  CreditCard,
+  Home,
+  Inbox,
   LayoutDashboard,
   Menu,
   Plus,
@@ -22,10 +23,10 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
+  { href: "/home", label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
-  { href: "/inbox", label: "Hospital inbox", icon: Building2 },
-  { href: "/payments", label: "Payments", icon: CreditCard }
+  { href: "/inbox", label: "Hospital inbox", icon: Building2 }
 ];
 
 function SideNav({
@@ -167,7 +168,7 @@ export function Shell({
                 <span className="hospital-back-label">Hospital dashboard</span>
               </Link>
             )}
-            <Link href="/referrals/new" className="button compact mobile-new-referral">
+            <Link href="/home" className="button compact mobile-new-referral">
               <Plus size={15} /> New referral
             </Link>
             <FacilitySelector />

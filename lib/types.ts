@@ -21,6 +21,9 @@ export type Hospital = {
   name: string;
   type: string;
   contact_info: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type Referral = {

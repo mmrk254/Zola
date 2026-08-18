@@ -20,7 +20,7 @@ import { useWorkspace } from "@/lib/use-workspace";
 import { PIPELINE_BUCKETS, Referral } from "@/lib/types";
 
 const QUICK_ACTIONS = [
-  { href: "/referrals/new", label: "New referral", icon: Plus },
+  { href: "/home", label: "New referral", icon: Plus },
   { href: "/inbox", label: "Hospital inbox", icon: Inbox },
   { href: "/notifications", label: "Notifications", icon: RadioTower },
   { href: "/dashboard", label: "View all cases", icon: Building2 }

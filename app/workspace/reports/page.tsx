@@ -8,7 +8,6 @@ import { useDocumentExport } from "@/components/document-export-dialog";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
 import { demoReferrals } from "@/lib/demo-data";
-import { demoPayments, formatKes, loadPayments } from "@/lib/demo-payments";
 import { buildReportDocument, buildReportExportData } from "@/lib/report-export";
 import { CareLevel, PIPELINE_BUCKETS, Referral, Urgency } from "@/lib/types";
 
@@ -33,14 +32,12 @@ export default function ReportsPage() {
   const { activeHospitalId, session } = useWorkspace();
   const { openExport, dialog: exportDialog } = useDocumentExport();
   const [referrals, setReferrals] = useState<Referral[]>(demoReferrals);
-  const [payments, setPayments] = useState(demoPayments);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const hospitalName =
     session?.memberships.find((m) => m.hospital_id === activeHospitalId)?.hospital_name ?? "Your facility";
 
   useEffect(() => {
-    setPayments(loadPayments());
     if (!isSupabaseConfigured) return;
     const params = activeHospitalId ? `?hospital_id=${activeHospitalId}` : "";
     fetch(`/api/referrals${params}`)
@@ -63,8 +60,6 @@ export default function ReportsPage() {
   const matchedRate = total ? Math.round(((total - stillSearching) / total) * 100) : 0;
   const acceptanceRate = total ? Math.round((accepted / total) * 100) : 0;
   const completionRate = total ? Math.round((received / total) * 100) : 0;
-  const collected = payments.reduce((s, p) => s + p.amount_paid_kes, 0);
-  const outstanding = payments.reduce((s, p) => s + p.balance_kes, 0);
 
   const pipeline = useMemo(
     () => PIPELINE_BUCKETS.map((b) => ({ label: b.label, count: referrals.filter((r) => b.statuses.includes(r.status)).length })),
@@ -110,8 +105,6 @@ export default function ReportsPage() {
         critical,
         inTransit,
         declined,
-        collected: formatKes(collected),
-        outstanding: formatKes(outstanding),
         pipeline,
         byCareLevel,
         byUrgency,
@@ -168,8 +161,6 @@ export default function ReportsPage() {
             <div><dt>Still searching for bed</dt><dd>{stillSearching}</dd></div>
             <div><dt>Declined / unmatched</dt><dd>{declined}</dd></div>
             <div><dt>Avg. match rate</dt><dd>{matchedRate}%</dd></div>
-            <div><dt>Payments collected</dt><dd>{formatKes(collected)}</dd></div>
-            <div><dt>Outstanding balances</dt><dd>{formatKes(outstanding)}</dd></div>
           </dl>
         </div>
         <div className="panel">

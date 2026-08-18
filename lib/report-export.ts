@@ -1,5 +1,4 @@
 import { ExportDocument } from "./document-templates";
-import { formatKes } from "./demo-payments";
 
 export type ReportExportData = {
   hospitalName: string;
@@ -11,8 +10,6 @@ export type ReportExportData = {
   critical: number;
   inTransit: number;
   declined: number;
-  collected: string;
-  outstanding: string;
   pipeline: { label: string; count: number }[];
   byCareLevel: { label: string; count: number }[];
   byUrgency: { label: string; count: number }[];
@@ -37,9 +34,7 @@ export function buildReportDocument(data: ReportExportData): ExportDocument {
           { label: "Transfer completion", value: `${data.completionRate}%` },
           { label: "Critical cases", value: String(data.critical) },
           { label: "Patients in transit", value: String(data.inTransit) },
-          { label: "Declined / unmatched", value: String(data.declined) },
-          { label: "Payments collected", value: data.collected },
-          { label: "Outstanding balance", value: data.outstanding, emphasis: true }
+          { label: "Declined / unmatched", value: String(data.declined) }
         ]
       },
       {
@@ -72,8 +67,4 @@ export function buildReportExportData(args: Omit<ReportExportData, "generatedAt"
     ...args,
     generatedAt: args.generatedAt ?? new Date().toLocaleString("en-KE")
   };
-}
-
-export function formatReportMoney(amount: number) {
-  return formatKes(amount);
 }

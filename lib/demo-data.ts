@@ -72,16 +72,43 @@ export const demoReferrals: Referral[] = [
 ];
 
 export const demoHospitals = [
-  { id: "demo-1", name: "Kijani County Hospital", type: "referring", contact_info: null },
-  { id: "demo-2", name: "Riverside Medical Centre", type: "referring", contact_info: null },
-  { id: "demo-3", name: "Nairobi Central Hospital", type: "receiving", contact_info: null }
+  {
+    id: "demo-1",
+    name: "Kijani County Hospital",
+    type: "referring",
+    contact_info: null,
+    address: "Kiambu Road, Kiambu",
+    latitude: -1.0312,
+    longitude: 36.8681
+  },
+  {
+    id: "demo-2",
+    name: "Riverside Medical Centre",
+    type: "referring",
+    contact_info: null,
+    address: "Waiyaki Way, Westlands, Nairobi",
+    latitude: -1.2674,
+    longitude: 36.807
+  },
+  {
+    id: "demo-3",
+    name: "Nairobi Central Hospital",
+    type: "receiving",
+    contact_info: null,
+    address: "Hospital Road, Nairobi CBD",
+    latitude: -1.2833,
+    longitude: 36.8219
+  }
 ];
 
-// Demo capacity snapshot, keyed by hospital, used by the Bed & Capacity
-// module and the hospital admin dashboard's capacity strip until the
-// /api/hospitals/{id}/capacity endpoint is wired up.
 export const demoCapacity: CapacitySnapshot[] = [
+  { hospital_id: "demo-1", care_level: "ICU", available_beds: 1, facility_status: "open", updated_at: "12 min ago" },
+  { hospital_id: "demo-1", care_level: "HDU", available_beds: 3, facility_status: "open", updated_at: "12 min ago" },
+  { hospital_id: "demo-1", care_level: "NICU", available_beds: 2, facility_status: "open", updated_at: "12 min ago" },
+  { hospital_id: "demo-2", care_level: "ICU", available_beds: 0, facility_status: "at_capacity", updated_at: "30 min ago" },
+  { hospital_id: "demo-2", care_level: "HDU", available_beds: 4, facility_status: "open", updated_at: "30 min ago" },
+  { hospital_id: "demo-2", care_level: "NICU", available_beds: 1, facility_status: "open", updated_at: "30 min ago" },
   { hospital_id: "demo-3", care_level: "ICU", available_beds: 2, facility_status: "open", updated_at: "18 min ago" },
   { hospital_id: "demo-3", care_level: "HDU", available_beds: 5, facility_status: "open", updated_at: "18 min ago" },
-  { hospital_id: "demo-3", care_level: "NICU", available_beds: 0, facility_status: "at_capacity", updated_at: "2 hrs ago" }
+  { hospital_id: "demo-3", care_level: "NICU", available_beds: 3, facility_status: "open", updated_at: "18 min ago" }
 ];

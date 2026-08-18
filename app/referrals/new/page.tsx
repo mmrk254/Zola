@@ -1,13 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight, Save } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
-import { TransferMode } from "@/lib/types";
+import { CareLevel } from "@/lib/types";
 
 const CONSENT_ITEMS = [
   "Patient or legal representative has been informed of the referral.",
@@ -16,8 +17,15 @@ const CONSENT_ITEMS = [
   "Next-of-kin contact details are correct, where available."
 ];
 
-export default function NewReferral() {
+function NewReferralForm() {
+  const searchParams = useSearchParams();
   const { session, activeHospitalId, actingPayload } = useWorkspace();
+
+  const preCareLevel = searchParams.get("care_level") as CareLevel | null;
+  const preHospitalId = searchParams.get("hospital_id");
+  const preHospitalName = searchParams.get("hospital_name");
+  const prePatientLocation = searchParams.get("patient_location");
+
   const [consent, setConsent] = useState([false, false, false, false]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<{ id: string; reference: string } | null>(null);
@@ -25,17 +33,18 @@ export default function NewReferral() {
 
   const [form, setForm] = useState({
     patient_initials: "",
-    care_level: "",
+    care_level: preCareLevel ?? "",
     urgency: "urgent",
     clinical_summary: "",
-    transfer_mode: "external" as TransferMode,
-    patient_location: ""
+    patient_location: prePatientLocation ?? ""
   });
 
   const needsFacility =
     session &&
     !session.networkAdmin &&
     session.memberships.filter((m) => m.status === "active").length > 1;
+
+  const hasPreselection = Boolean(preCareLevel && preHospitalId);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -53,8 +62,8 @@ export default function NewReferral() {
       setError("Select which facility you are acting for.");
       return;
     }
-    if (form.transfer_mode === "internal_offsite" && !form.patient_location.trim()) {
-      setError("Enter the patient's current location for pickup.");
+    if (!form.patient_location.trim()) {
+      setError("Enter the patient's current location.");
       return;
     }
     if (!consent.every(Boolean)) {
@@ -72,8 +81,9 @@ export default function NewReferral() {
           care_level: form.care_level,
           urgency: form.urgency,
           clinical_summary: form.clinical_summary,
-          transfer_mode: form.transfer_mode,
-          patient_location: form.transfer_mode === "internal_offsite" ? form.patient_location : null,
+          transfer_mode: "external",
+          patient_location: form.patient_location.trim(),
+          receiving_facility_id: preHospitalId,
           acting_hospital_id: activeHospitalId
         })
       });
@@ -99,7 +109,7 @@ export default function NewReferral() {
   return (
     <Shell title="Create referral">
       <div className="breadcrumb">
-        <Link href="/dashboard">Dashboard</Link>
+        <Link href="/home">Home</Link>
         <ChevronRight size={14} /> New referral
       </div>
 
@@ -109,7 +119,10 @@ export default function NewReferral() {
         <section className="success-card">
           <CheckCircle2 />
           <h2>Referral {submitted.reference} saved</h2>
-          <p>Consent is confirmed. Open the referral and send it — all network hospitals will be notified.</p>
+          <p>
+            Consent is confirmed. Open the referral and send it
+            {preHospitalName ? ` to ${preHospitalName}` : ""}.
+          </p>
           <Link className="button" href={`/referrals/${submitted.id}`}>
             Open referral
           </Link>
@@ -120,6 +133,16 @@ export default function NewReferral() {
             <div className="notice warn">Demo mode: connect Supabase to save real referrals from this form.</div>
           )}
           {error && <div className="notice error">{error}</div>}
+
+          {hasPreselection && (
+            <section className="form-card preselection-summary">
+              <div className="preselection-chips">
+                <span className="chip">{form.care_level} bed</span>
+                {preHospitalName && <span className="chip">{preHospitalName}</span>}
+                {form.patient_location && <span className="chip">{form.patient_location}</span>}
+              </div>
+            </section>
+          )}
 
           <section className="form-card">
             <div className="form-heading">
@@ -140,21 +163,23 @@ export default function NewReferral() {
                   onChange={(e) => setForm((f) => ({ ...f, patient_initials: e.target.value.toUpperCase() }))}
                 />
               </label>
-              <label>
-                Care level
-                <select
-                  required
-                  value={form.care_level}
-                  onChange={(e) => setForm((f) => ({ ...f, care_level: e.target.value }))}
-                >
-                  <option value="" disabled>
-                    Select required care level
-                  </option>
-                  <option value="ICU">ICU</option>
-                  <option value="HDU">HDU</option>
-                  <option value="NICU">NICU</option>
-                </select>
-              </label>
+              {!hasPreselection && (
+                <label>
+                  Care level
+                  <select
+                    required
+                    value={form.care_level}
+                    onChange={(e) => setForm((f) => ({ ...f, care_level: e.target.value }))}
+                  >
+                    <option value="" disabled>
+                      Select required care level
+                    </option>
+                    <option value="ICU">ICU</option>
+                    <option value="HDU">HDU</option>
+                    <option value="NICU">NICU</option>
+                  </select>
+                </label>
+              )}
               <label>
                 Urgency
                 <select value={form.urgency} onChange={(e) => setForm((f) => ({ ...f, urgency: e.target.value }))}>
@@ -173,71 +198,23 @@ export default function NewReferral() {
                   onChange={(e) => setForm((f) => ({ ...f, clinical_summary: e.target.value }))}
                 />
               </label>
+              {!hasPreselection && (
+                <label className="full">
+                  Patient location
+                  <input
+                    required
+                    placeholder="e.g. Ward 3B, Kijani County Hospital"
+                    value={form.patient_location}
+                    onChange={(e) => setForm((f) => ({ ...f, patient_location: e.target.value }))}
+                  />
+                </label>
+              )}
             </div>
           </section>
 
           <section className="form-card">
             <div className="form-heading">
               <span>02</span>
-              <div>
-                <h2>Transfer type</h2>
-                <p>Choose whether the patient is already on-site or needs pickup.</p>
-              </div>
-            </div>
-            <div className="transfer-options">
-              <label className={`transfer-option ${form.transfer_mode === "external" ? "selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="transfer_mode"
-                  checked={form.transfer_mode === "external"}
-                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "external", patient_location: "" }))}
-                />
-                <div>
-                  <b>Broadcast to all hospitals</b>
-                  <small>No hospital is chosen upfront. Every network hospital sees this case — the first to accept gets the referral.</small>
-                </div>
-              </label>
-              <label className={`transfer-option ${form.transfer_mode === "internal_onsite" ? "selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="transfer_mode"
-                  checked={form.transfer_mode === "internal_onsite"}
-                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "internal_onsite", patient_location: "" }))}
-                />
-                <div>
-                  <b>My hospital — patient on-site</b>
-                  <small>Patient is already at your facility. No ambulance needed after acceptance.</small>
-                </div>
-              </label>
-              <label className={`transfer-option ${form.transfer_mode === "internal_offsite" ? "selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="transfer_mode"
-                  checked={form.transfer_mode === "internal_offsite"}
-                  onChange={() => setForm((f) => ({ ...f, transfer_mode: "internal_offsite" }))}
-                />
-                <div>
-                  <b>My hospital — off-site pickup</b>
-                  <small>Patient is at another location — dispatch your ambulance after family confirms.</small>
-                </div>
-              </label>
-            </div>
-            {form.transfer_mode === "internal_offsite" && (
-              <label style={{ marginTop: 12 }}>
-                Patient location
-                <input
-                  required
-                  placeholder="e.g. Ward 3B, Donholm ERC outreach clinic"
-                  value={form.patient_location}
-                  onChange={(e) => setForm((f) => ({ ...f, patient_location: e.target.value }))}
-                />
-              </label>
-            )}
-          </section>
-
-          <section className="form-card">
-            <div className="form-heading">
-              <span>03</span>
               <div>
                 <h2>Consent checkpoint</h2>
                 <p>All confirmations are required before the referral can be sent.</p>
@@ -258,7 +235,7 @@ export default function NewReferral() {
           </section>
 
           <div className="form-actions">
-            <Link href="/dashboard" className="button ghost">
+            <Link href={hasPreselection ? "/home" : "/dashboard"} className="button ghost">
               Cancel
             </Link>
             <button className="button" type="submit" disabled={submitting}>
@@ -268,5 +245,13 @@ export default function NewReferral() {
         </form>
       )}
     </Shell>
+  );
+}
+
+export default function NewReferral() {
+  return (
+    <Suspense fallback={<div className="auth-loading">Loading...</div>}>
+      <NewReferralForm />
+    </Suspense>
   );
 }

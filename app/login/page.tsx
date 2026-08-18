@@ -53,7 +53,7 @@ function StaffLoginForm() {
       return;
     }
 
-    window.location.assign("/dashboard");
+    window.location.assign("/home");
   }
 
   return (
