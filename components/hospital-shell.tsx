@@ -5,11 +5,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Building2,
+  BedDouble,
+  Bell,
   ChevronLeft,
   ChevronRight,
-  ClipboardPlus,
+  FileBarChart2,
+  Inbox,
   Menu,
-  Plus,
+  Truck,
+  Users,
   X
 } from "lucide-react";
 import { ZolaLogo } from "@/components/zola-logo";
@@ -19,8 +23,14 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
-  { href: "/home", label: "New referral", icon: ClipboardPlus },
-  { href: "/workspace/dashboard", label: "Facility centre", icon: Building2 }
+  { href: "/workspace/dashboard", label: "Hospital dashboard", icon: Building2 },
+  { href: "/inbox", label: "Referral inbox", icon: Inbox },
+  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
+  { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
+  { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
+  { href: "/workspace/staff", label: "Staff accounts", icon: Users },
+  { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 },
+  { href: "/workspace/settings", label: "Facility settings", icon: Building2 }
 ];
 
 function Nav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
@@ -138,9 +148,6 @@ export function HospitalShell({
             </div>
           </div>
           <div className="header-actions">
-            <Link href="/referrals/new" className="button compact mobile-new-referral">
-              <Plus size={15} /> New referral
-            </Link>
             <FacilitySelector />
             <NotificationBell />
             {action}

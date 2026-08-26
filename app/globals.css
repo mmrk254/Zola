@@ -66,7 +66,7 @@ button, input, select, textarea { font: inherit; }
 /* ---------- Dashboard shell ---------- */
 .app-shell { display: flex; min-height: 100vh; overflow-x: clip; max-width: 100%; }
 .workspace { flex: 1; min-width: 0; max-width: 100%; overflow-x: clip; }
-.desktop-aside { width: 220px; background: var(--cream); padding: 20px 14px; border-right: 1px solid var(--line); display: flex; flex-direction: column; transition: width .22s ease, padding .22s ease; flex-shrink: 0; }
+.desktop-aside { width: 220px; height: 100vh; position: sticky; top: 0; background: var(--cream); padding: 20px 14px; border-right: 1px solid var(--line); display: flex; flex-direction: column; transition: width .22s ease, padding .22s ease; flex-shrink: 0; overflow: hidden; }
 .app-shell.sidebar-collapsed .desktop-aside { width: 68px; padding: 20px 10px; }
 .app-shell.sidebar-collapsed .side-label, .app-shell.sidebar-collapsed .side-footer span:not(.online-dot), .app-shell.sidebar-collapsed .side-nav a span, .app-shell.sidebar-collapsed .brand { font-size: 0; }
 .app-shell.sidebar-collapsed .brand { justify-content: center; }
@@ -1509,6 +1509,10 @@ body {
 .route-summary { display: flex; align-items: center; gap: 11px; padding: 12px 14px; margin: 12px 0; border: 1px solid #b9dedb; border-radius: 10px; background: #f1faf9; color: var(--teal-deep); }
 .route-summary div { display: grid; gap: 2px; }
 .route-summary small { color: #536260; font-size: 12px; }
+.location-search-status { color: var(--muted); font-size: 12px; margin: -8px 0 8px; }
+.location-results { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 0 0 14px; background: var(--cream); }
+.location-results button { text-align: left; display: flex; align-items: flex-start; gap: 9px; border: 0; border-bottom: 1px solid var(--line); padding: 11px 13px; background: transparent; color: var(--navy); font-size: 12px; cursor: pointer; }
+.location-results button:last-child { border-bottom: 0; }.location-results button:hover { background: var(--cream-warm); }.location-results svg { color: var(--teal); flex: 0 0 auto; margin-top: 1px; }.patient-location-map { margin: 14px 0; }
 .legend-dot {
   display: inline-block;
   width: 10px;

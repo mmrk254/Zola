@@ -4,15 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BedDouble,
-  Bell,
-  Building2,
-  ClipboardPlus,
-  FileBarChart2,
-  Inbox,
-  LayoutDashboard,
-  Truck,
-  Users
 } from "lucide-react";
 import { HospitalShell } from "@/components/hospital-shell";
 import { useNotifications } from "@/components/notification-bell";
@@ -20,17 +11,6 @@ import { useWorkspace } from "@/lib/use-workspace";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { demoCapacity, demoReferrals } from "@/lib/demo-data";
 import { CapacitySnapshot, PIPELINE_BUCKETS, Referral } from "@/lib/types";
-
-const QUICK_ACTIONS = [
-  { href: "/home", label: "New referral", icon: ClipboardPlus },
-  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
-  { href: "/dashboard", label: "Referral operations", icon: LayoutDashboard },
-  { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
-  { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
-  { href: "/inbox", label: "Referral inbox", icon: Inbox },
-  { href: "/workspace/staff", label: "Staff accounts", icon: Users },
-  { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 }
-];
 
 export default function HospitalDashboard() {
   const { session, activeHospitalId } = useWorkspace();
@@ -80,6 +60,9 @@ export default function HospitalDashboard() {
   );
 
   const facilityOpen = capacity.every((c) => c.facility_status !== "closed");
+  const uniqueCapacity = capacity.filter((item, index, all) =>
+    all.findIndex((candidate) => candidate.hospital_id === item.hospital_id && candidate.care_level === item.care_level) === index
+  );
 
   return (
     <HospitalShell title="Hospital overview">
@@ -150,8 +133,8 @@ export default function HospitalDashboard() {
             </Link>
           </div>
           <div className="capacity-grid">
-            {capacity.map((c) => (
-              <div className="capacity-card" key={c.care_level}>
+            {uniqueCapacity.map((c) => (
+              <div className="capacity-card" key={`${c.hospital_id}-${c.care_level}`}>
                 <h3>{c.care_level}</h3>
                 <div className="capacity-count">
                   <strong style={{ fontSize: 22 }}>{c.available_beds}</strong>
@@ -165,14 +148,6 @@ export default function HospitalDashboard() {
             ))}
           </div>
         </section>
-
-        <div className="quick-actions hospital-quick-actions" style={{ maxWidth: "none" }}>
-          {QUICK_ACTIONS.map((action) => (
-            <Link key={action.href} href={action.href} className="quick-action">
-              <action.icon size={16} /> {action.label}
-            </Link>
-          ))}
-        </div>
 
         <section className="panel pipeline-bar" style={{ maxWidth: "none" }}>
           <div className="panel-heading">
@@ -190,25 +165,6 @@ export default function HospitalDashboard() {
             ))}
           </div>
         </section>
-
-        <div className="hospital-dash-actions">
-          <Link href="/workspace/staff" className="hospital-dash-link">
-            <Users size={18} />
-            <span>
-              <b>Staff accounts</b>
-              <small>Create logins for your referral team</small>
-            </span>
-            <ArrowRight size={16} />
-          </Link>
-          <Link href="/workspace/settings" className="hospital-dash-link">
-            <Building2 size={18} />
-            <span>
-              <b>Facility settings</b>
-              <small>Profile, capacity, and contacts</small>
-            </span>
-            <ArrowRight size={16} />
-          </Link>
-        </div>
 
         <p className="hospital-dash-note">
           Clinical staff sign in via <Link href="/login?next=/referrals/new">Create a referral</Link> on the homepage, not here.

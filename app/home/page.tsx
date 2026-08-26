@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -44,6 +44,7 @@ const BED_OPTIONS: {
 ];
 
 type Step = "bed" | "hospitals" | "location";
+type LocationMatch = { display_name: string; lat: string; lon: string };
 
 export default function HomePage() {
   const router = useRouter();
@@ -58,6 +59,21 @@ export default function HomePage() {
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [broadcastMode, setBroadcastMode] = useState(false);
   const [route, setRoute] = useState<{ duration: string; distance: string } | null>(null);
+  const [locationMatches, setLocationMatches] = useState<LocationMatch[]>([]);
+  const [patientCoords, setPatientCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [findingLocation, setFindingLocation] = useState(false);
+
+  useEffect(() => {
+    if (patientLocation.trim().length < 3 || patientCoords) { setLocationMatches([]); return; }
+    const timer = window.setTimeout(async () => {
+      setFindingLocation(true);
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=ke&q=${encodeURIComponent(patientLocation)}`);
+        setLocationMatches(response.ok ? await response.json() : []);
+      } catch { setLocationMatches([]); } finally { setFindingLocation(false); }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [patientLocation, patientCoords]);
 
   async function selectBed(level: CareLevel) {
     setSelectedBed(level);
@@ -104,7 +120,7 @@ export default function HomePage() {
   }
 
   function continueToReferral() {
-    if (!selectedBed || !patientLocation.trim()) return;
+    if (!selectedBed || !patientLocation.trim() || !patientCoords) return;
 
     const params = new URLSearchParams({
       care_level: selectedBed,
@@ -324,22 +340,31 @@ export default function HomePage() {
               Patient&apos;s current location
               <input
                 autoFocus
-                placeholder="e.g. Ward 3B, Kijani County Hospital"
+                placeholder="Search a road, estate, landmark, or facility"
                 value={patientLocation}
-                onChange={(e) => setPatientLocation(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && patientLocation.trim()) continueToReferral();
-                }}
+                onChange={(e) => { setPatientLocation(e.target.value); setPatientCoords(null); }}
               />
             </label>
+            {findingLocation && <p className="location-search-status">Finding locations...</p>}
+            {locationMatches.length > 0 && (
+              <div className="location-results">
+                {locationMatches.map((match) => <button type="button" key={`${match.lat}:${match.lon}`} onClick={() => { setPatientLocation(match.display_name); setPatientCoords({ latitude: Number(match.lat), longitude: Number(match.lon) }); setLocationMatches([]); }}><MapPin size={15} /><span>{match.display_name}</span></button>)}
+              </div>
+            )}
+            {patientCoords && selectedHospital && (
+              <div className="patient-location-map">
+                <HospitalPickerMap userLocation={patientCoords} hospitals={[selectedHospital]} careLevel={selectedBed} selectedId={selectedHospital.id} onSelect={() => {}} onRouteChange={setRoute} />
+                <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Calculating route..."}</small></div></div>
+              </div>
+            )}
 
             <button
               type="button"
               className="button uber-continue"
-              disabled={!patientLocation.trim()}
+              disabled={!patientLocation.trim() || !patientCoords}
               onClick={continueToReferral}
             >
-              Continue to referral <ArrowRight size={17} />
+              {patientCoords ? "Continue to referral" : "Select the patient location"} <ArrowRight size={17} />
             </button>
           </section>
         )}

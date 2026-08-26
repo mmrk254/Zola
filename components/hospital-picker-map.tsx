@@ -4,170 +4,44 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { MapPin } from "lucide-react";
 
-export type MapHospital = {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  address?: string | null;
-  distance_km?: number;
-  available_beds?: number;
-};
-
-type Props = {
-  userLocation: { latitude: number; longitude: number };
-  hospitals: MapHospital[];
-  careLevel: string;
-  selectedId?: string | null;
-  onSelect: (hospital: MapHospital) => void;
-  onRouteChange?: (route: { duration: string; distance: string } | null) => void;
-};
-
-const MAPS_CALLBACK = "__zolaMapsReady";
+export type MapHospital = { id: string; name: string; latitude: number; longitude: number; address?: string | null; distance_km?: number; available_beds?: number };
+type Props = { userLocation: { latitude: number; longitude: number }; hospitals: MapHospital[]; careLevel: string; selectedId?: string | null; onSelect: (hospital: MapHospital) => void; onRouteChange?: (route: { duration: string; distance: string } | null) => void };
+declare global { interface Window { L?: any } }
 
 export function HospitalPickerMap({ userLocation, hospitals, careLevel, selectedId, onSelect, onRouteChange }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
-  const directionsRef = useRef<google.maps.DirectionsRenderer | null>(null);
-  const [mapsReady, setMapsReady] = useState(false);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const elementRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+  const layersRef = useRef<any[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-  if (typeof window !== "undefined") {
-      (window as unknown as Record<string, () => void>)[MAPS_CALLBACK] = () => setMapsReady(true);
+    if (!ready || !window.L || !elementRef.current) return;
+    const L = window.L;
+    if (!mapRef.current) mapRef.current = L.map(elementRef.current).setView([userLocation.latitude, userLocation.longitude], 12);
+    if (!mapRef.current.__tiles) {
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(mapRef.current);
+      mapRef.current.__tiles = true;
     }
-    if ((window as unknown as { google?: typeof google }).google?.maps) {
-      setMapsReady(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!mapsReady || !apiKey || !mapRef.current || !(window as unknown as { google?: typeof google }).google) return;
-
-    const googleMaps = (window as unknown as { google: typeof google }).google;
-
-    if (!mapInstance.current) {
-      mapInstance.current = new googleMaps.maps.Map(mapRef.current, {
-        center: { lat: userLocation.latitude, lng: userLocation.longitude },
-        zoom: 12,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: [
-          { featureType: "poi.medical", stylers: [{ visibility: "on" }] },
-          { featureType: "transit", stylers: [{ visibility: "simplified" }] }
-        ]
-      });
-    }
-
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    userMarkerRef.current?.setMap(null);
-
-    userMarkerRef.current = new googleMaps.maps.Marker({
-      map: mapInstance.current,
-      position: { lat: userLocation.latitude, lng: userLocation.longitude },
-      title: "Your location",
-      icon: {
-        path: googleMaps.maps.SymbolPath.CIRCLE,
-        scale: 9,
-        fillColor: "#2563eb",
-        fillOpacity: 1,
-        strokeColor: "#fff",
-        strokeWeight: 2
-      },
-      zIndex: 1000
+    layersRef.current.forEach((layer) => layer.remove()); layersRef.current = [];
+    layersRef.current.push(L.circleMarker([userLocation.latitude, userLocation.longitude], { radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }).addTo(mapRef.current).bindPopup("Patient location"));
+    const bounds = L.latLngBounds([[userLocation.latitude, userLocation.longitude]]);
+    hospitals.forEach((hospital) => {
+      const selected = hospital.id === selectedId;
+      const marker = L.circleMarker([hospital.latitude, hospital.longitude], { radius: selected ? 11 : 8, color: "#fff", weight: 2, fillColor: selected ? "#0f8d8a" : "#e85d4c", fillOpacity: 1 }).addTo(mapRef.current).bindPopup(`<strong>${hospital.name}</strong><br>${careLevel}: ${hospital.available_beds ?? "?"} bed(s)`).on("click", () => onSelect(hospital));
+      layersRef.current.push(marker); bounds.extend([hospital.latitude, hospital.longitude]);
     });
-
-    const bounds = new googleMaps.maps.LatLngBounds();
-    bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude });
-
-    for (const hospital of hospitals) {
-      const isSelected = hospital.id === selectedId;
-      const marker = new googleMaps.maps.Marker({
-        map: mapInstance.current,
-        position: { lat: hospital.latitude, lng: hospital.longitude },
-        title: hospital.name,
-        icon: {
-          path: googleMaps.maps.SymbolPath.CIRCLE,
-          scale: isSelected ? 11 : 8,
-          fillColor: isSelected ? "#0f8d8a" : "#e85d4c",
-          fillOpacity: 1,
-          strokeColor: "#fff",
-          strokeWeight: 2
-        },
-        zIndex: isSelected ? 500 : 100
-      });
-
-      marker.addListener("click", () => onSelect(hospital));
-
-      const info = new googleMaps.maps.InfoWindow({
-        content: `<div style="font-family:sans-serif;font-size:13px;max-width:200px">
-          <strong>${hospital.name}</strong><br/>
-          <span style="color:#666">${careLevel}: ${hospital.available_beds ?? "?"} bed(s)</span>
-        </div>`
-      });
-      marker.addListener("mouseover", () => info.open({ map: mapInstance.current!, anchor: marker }));
-      marker.addListener("mouseout", () => info.close());
-
-      markersRef.current.push(marker);
-      bounds.extend({ lat: hospital.latitude, lng: hospital.longitude });
-    }
-
     const selected = hospitals.find((hospital) => hospital.id === selectedId);
-    if (selected) {
-      if (!directionsRef.current) directionsRef.current = new googleMaps.maps.DirectionsRenderer({ suppressMarkers: true, preserveViewport: false });
-      directionsRef.current.setMap(mapInstance.current);
-      new googleMaps.maps.DirectionsService().route({
-        origin: { lat: userLocation.latitude, lng: userLocation.longitude },
-        destination: { lat: selected.latitude, lng: selected.longitude },
-        travelMode: googleMaps.maps.TravelMode.DRIVING
-      }, (result, status) => {
-        if (status === "OK" && result?.routes[0]?.legs[0]) {
-          directionsRef.current?.setDirections(result);
-          const leg = result.routes[0].legs[0];
-          onRouteChange?.({ duration: leg.duration?.text ?? "", distance: leg.distance?.text ?? "" });
-        } else onRouteChange?.(null);
-      });
-    } else {
-      directionsRef.current?.setMap(null);
-      onRouteChange?.(null);
-    }
+    if (!selected) { mapRef.current.fitBounds(bounds, { padding: [42, 42], maxZoom: 13 }); onRouteChange?.(null); return; }
+    const controller = new AbortController();
+    fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation.longitude},${userLocation.latitude};${selected.longitude},${selected.latitude}?overview=full&geometries=geojson`, { signal: controller.signal })
+      .then((response) => response.json()).then((data) => {
+        const route = data.routes?.[0]; if (!route) throw new Error("No route");
+        const line = L.geoJSON(route.geometry, { style: { color: "#0f8d8a", weight: 5, opacity: 0.8 } }).addTo(mapRef.current);
+        layersRef.current.push(line); mapRef.current.fitBounds(line.getBounds(), { padding: [42, 42] });
+        onRouteChange?.({ distance: `${(route.distance / 1000).toFixed(1)} km`, duration: `${Math.round(route.duration / 60)} min` });
+      }).catch(() => onRouteChange?.(null));
+    return () => controller.abort();
+  }, [ready, userLocation, hospitals, careLevel, selectedId, onSelect, onRouteChange]);
 
-    if (hospitals.length > 0 && !selected) {
-      mapInstance.current.fitBounds(bounds, 48);
-    } else {
-      mapInstance.current.setCenter({ lat: userLocation.latitude, lng: userLocation.longitude });
-      mapInstance.current.setZoom(12);
-    }
-  }, [mapsReady, apiKey, userLocation, hospitals, careLevel, selectedId, onSelect, onRouteChange]);
-
-  if (!apiKey) {
-    return (
-      <div className="hospital-map-fallback">
-        <MapPin size={20} />
-        <p>
-          Add <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to show the map. Hospitals are still listed below.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${MAPS_CALLBACK}`}
-        strategy="afterInteractive"
-        onLoad={() => setMapsReady(true)}
-      />
-      <div className="hospital-map-wrap" ref={mapRef} role="img" aria-label="Map of hospitals with available beds" />
-      <p className="hospital-map-legend">
-        <span><i className="legend-dot user" /> You</span>
-        <span><i className="legend-dot hospital" /> {careLevel} available</span>
-        <span><i className="legend-dot selected" /> Selected</span>
-      </p>
-    </>
-  );
+  return <><Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="afterInteractive" onLoad={() => setReady(true)} /><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /><div className="hospital-map-wrap" ref={elementRef} role="img" aria-label="Map of available facilities and patient transport route" />{!ready && <div className="hospital-map-loading"><MapPin size={18} /> Loading map...</div>}</>;
 }

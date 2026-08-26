@@ -22,7 +22,7 @@ import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
   { href: "/home", label: "New referral", icon: ClipboardPlus },
-  { href: "/dashboard", label: "Patient transport", icon: Navigation }
+  { href: "/dashboard", label: "Dashboard", icon: Navigation }
 ];
 
 function SideNav({

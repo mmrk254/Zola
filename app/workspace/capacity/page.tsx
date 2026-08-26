@@ -118,8 +118,8 @@ export default function CapacityPage() {
           </div>
 
           <div className="capacity-grid">
-            {(loading ? CARE_LEVELS.map((level) => blankSnapshot(activeHospitalId ?? "", level)) : capacity).map((c) => (
-              <div className="capacity-card" key={c.care_level}>
+            {(loading ? CARE_LEVELS.map((level) => blankSnapshot(activeHospitalId ?? "", level)) : capacity).map((c, index) => (
+              <div className="capacity-card" key={`${c.hospital_id}-${c.care_level}-${index}`}>
                 <h3>{c.care_level}</h3>
                 <label className="capacity-count" style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
