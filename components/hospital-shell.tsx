@@ -9,6 +9,7 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  ClipboardPlus,
   FileBarChart2,
   Inbox,
   Menu,
@@ -23,6 +24,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
+  { href: "/home", label: "New referral", icon: ClipboardPlus },
   { href: "/workspace/dashboard", label: "Hospital dashboard", icon: Building2 },
   { href: "/inbox", label: "Referral inbox", icon: Inbox },
   { href: "/workspace/notifications", label: "Notifications", icon: Bell },

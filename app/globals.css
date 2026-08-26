@@ -1513,6 +1513,7 @@ body {
 .location-results { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 0 0 14px; background: var(--cream); }
 .location-results button { text-align: left; display: flex; align-items: flex-start; gap: 9px; border: 0; border-bottom: 1px solid var(--line); padding: 11px 13px; background: transparent; color: var(--navy); font-size: 12px; cursor: pointer; }
 .location-results button:last-child { border-bottom: 0; }.location-results button:hover { background: var(--cream-warm); }.location-results svg { color: var(--teal); flex: 0 0 auto; margin-top: 1px; }.patient-location-map { margin: 14px 0; }
+.stable-map { display: grid; gap: 10px; }.stable-map iframe { display: block; border: 1.5px solid var(--line); }.stable-map-points { display: flex; flex-wrap: wrap; gap: 7px; }.stable-map-points button, .map-point { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; background: var(--cream); color: var(--navy); font-size: 11px; cursor: pointer; }.stable-map-points button.selected { border-color: var(--teal); background: #e7f5f3; color: var(--teal-deep); }.map-point.patient { border-color: #9fc4f3; background: #eef6ff; color: #245d9e; cursor: default; }
 .legend-dot {
   display: inline-block;
   width: 10px;

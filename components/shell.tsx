@@ -49,7 +49,7 @@ function SideNav({
         </Link>
       )}
       <nav className="side-nav">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => !showHospitalLink || item.href !== "/dashboard").map((item) => (
           <Link
             key={item.href}
             href={item.href}

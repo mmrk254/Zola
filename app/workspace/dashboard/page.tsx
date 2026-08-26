@@ -73,6 +73,7 @@ export default function HospitalDashboard() {
             <h2>{hospitalName}</h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href="/home" className="button compact">New referral</Link>
             <span className={`facility-status-pill ${facilityOpen ? "open" : "at_capacity"}`}>
               <span className={`online-dot ${facilityOpen ? "" : "offline"}`} />
               {facilityOpen ? "Accepting referrals" : "Limited capacity"}

@@ -40,14 +40,14 @@ export function HospitalAuthLayout({
   return (
     <main className="auth-page">
       <div className="auth-page-back">
-        <Link href="/workspace" className="text-link auth-back-link">
+        <Link href="/" className="text-link auth-back-link">
           <ArrowLeft size={15} /> Back
         </Link>
       </div>
 
       <section className="auth-card">
         <div className="portal-form-col">
-          <Link href="/workspace" className="portal-brand">
+          <Link href="/" className="portal-brand">
             <ZolaLogo size={17} />
           </Link>
           <div className="portal-head">
