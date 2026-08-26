@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Zola — Critical care coordination",
+    name: "Zola Critical care coordination",
     short_name: "Zola",
     description: "Real-time ICU, HDU, and NICU referral coordination for hospitals.",
     start_url: "/",

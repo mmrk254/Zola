@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
   }
 
-  const isNetworkBroadcast = current.transfer_mode === "external" || !current.receiving_facility_id;
+  const isNetworkBroadcast = current.transfer_mode === "external" && !current.receiving_facility_id;
 
   if (isNetworkBroadcast) {
     const { error: responseError } = await supabase.from("referral_responses").upsert(

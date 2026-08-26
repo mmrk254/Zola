@@ -167,9 +167,9 @@ export default function WorkspaceStaffPage() {
             <label className="auth-field">
               <span>Role</span>
               <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-                <option value="clinician">Clinician — create &amp; manage referrals</option>
-                <option value="hospital_staff">Hospital staff — inbox accept/decline</option>
-                <option value="hospital_admin">Hospital admin — full workspace</option>
+                <option value="clinician">Clinician: create and manage referrals</option>
+                <option value="hospital_staff">Hospital staff: inbox accept or decline</option>
+                <option value="hospital_admin">Hospital admin: full workspace</option>
               </select>
             </label>
             <label className="auth-field">

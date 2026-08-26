@@ -8,9 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardPlus,
-  Home,
-  Inbox,
-  LayoutDashboard,
+  Navigation,
   Menu,
   Plus,
   X
@@ -23,10 +21,8 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
-  { href: "/inbox", label: "Hospital inbox", icon: Building2 }
+  { href: "/home", label: "New referral", icon: ClipboardPlus },
+  { href: "/dashboard", label: "Patient transport", icon: Navigation }
 ];
 
 function SideNav({

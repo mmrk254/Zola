@@ -105,19 +105,33 @@ export async function POST(request: NextRequest) {
 
   const reference = nextReference((count ?? 0) + 1);
 
-  const mode = ["external", "internal_onsite", "internal_offsite"].includes(transfer_mode)
+  const mode = ["external", "targeted", "internal_onsite", "internal_offsite"].includes(transfer_mode)
     ? transfer_mode
     : "external";
+
+  if (mode === "targeted" && !receiving_facility_id) {
+    return NextResponse.json({ error: "A receiving hospital is required for targeted referrals." }, { status: 400 });
+  }
+
+  if (mode === "external" && receiving_facility_id) {
+    return NextResponse.json(
+      { error: "Broadcast referrals cannot have a pre-selected receiving hospital." },
+      { status: 400 }
+    );
+  }
 
   if (mode === "internal_offsite" && !patient_location?.trim()) {
     return NextResponse.json({ error: "Patient location is required for off-site internal referrals." }, { status: 400 });
   }
 
-  const receivingOnCreate = receiving_facility_id
-    ? receiving_facility_id
-    : ["internal_onsite", "internal_offsite"].includes(mode)
-      ? actingHospitalId
-      : null;
+  const receivingOnCreate =
+    mode === "targeted" && receiving_facility_id
+      ? receiving_facility_id
+      : receiving_facility_id && mode !== "external"
+        ? receiving_facility_id
+        : ["internal_onsite", "internal_offsite"].includes(mode)
+          ? actingHospitalId
+          : null;
 
   const locationValue = patient_location?.trim() || null;
 

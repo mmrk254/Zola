@@ -26,7 +26,7 @@ export default function Home() {
           <Link href="/login?next=/home" className="button landing-cta">
             Create a referral <ArrowRight size={17} />
           </Link>
-          <Link href="/workspace" className="button ghost landing-cta">
+          <Link href="/workspace/login" className="button ghost landing-cta">
             Open workspace <ArrowRight size={17} />
           </Link>
         </div>

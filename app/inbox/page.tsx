@@ -87,7 +87,7 @@ export default function InboxPage() {
         <div className="panel-heading">
           <div>
             <h2>Incoming referrals</h2>
-            <p>All network hospitals see broadcast cases. First to accept wins — others lose it from their inbox. Declining only removes it from yours.</p>
+            <p>All network hospitals see broadcast cases. The first facility to accept receives the case. Declining only removes it from your inbox.</p>
           </div>
           <Link href="/dashboard" className="text-link">
             Back to dashboard <ArrowRight size={15} />

@@ -26,10 +26,11 @@ function stepLabel(status: ReferralStatus) {
   return REFERRAL_STEPS.find((s) => s.status === status)?.label ?? status;
 }
 
-function transferLabel(mode?: TransferMode) {
+function transferLabel(mode?: TransferMode, receivingName?: string) {
+  if (mode === "targeted") return receivingName ? `Directed to ${receivingName}` : "Directed to selected hospital";
   if (mode === "internal_onsite") return "Internal · patient on-site";
   if (mode === "internal_offsite") return "Internal · off-site pickup";
-  return "External network referral";
+  return "Broadcast to all hospitals";
 }
 
 export default function ReferralDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -92,6 +93,7 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
   const canRespondAsReceiver = useMemo(() => {
     if (!referral || !activeHospitalId || referral.status !== "searching") return false;
     if (referral.referring_facility_id === activeHospitalId && referral.transfer_mode === "external") return false;
+    if (referral.transfer_mode === "targeted" && referral.receiving_facility_id !== activeHospitalId) return false;
     if (referral.receiving_facility_id && referral.receiving_facility_id !== activeHospitalId) return false;
     return true;
   }, [referral, activeHospitalId]);
@@ -151,11 +153,20 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
       <FacilityRequiredNotice />
       {error && <div className="notice error">{error}</div>}
 
-      {referral.status === "searching" && referral.transfer_mode === "external" && isReferringHospital && (
+      {referral.status === "searching" && referral.transfer_mode === "external" && !referral.receiving_facility_id && isReferringHospital && (
         <div className="notice">
           <RadioTower size={16} />
           <span>
-            <b>Broadcast live.</b> All network hospitals can see this case. The first to accept is assigned — it then disappears from other hospitals&apos; inboxes.
+            <b>Broadcast live.</b> All network hospitals can see this case. The first to accept is assigned, then it disappears from other hospitals&apos; inboxes.
+          </span>
+        </div>
+      )}
+
+      {referral.status === "searching" && referral.transfer_mode === "targeted" && isReferringHospital && (
+        <div className="notice">
+          <RadioTower size={16} />
+          <span>
+            <b>Directed referral.</b> Only <b>{referral.receiving_facility ?? "the selected hospital"}</b> can see and accept this case.
           </span>
         </div>
       )}
@@ -168,7 +179,7 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
             <Check size={16} />
             <span>
               <b>Accepted by {referral.receiving_facility}</b>
-              {referral.status === "searching" ? "" : " — referring team can continue the case."}
+              {referral.status === "searching" ? "" : ". The referring team can continue the case."}
             </span>
           </div>
         )}
@@ -185,7 +196,7 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
                 {referral.referring_facility}
                 {referral.receiving_facility ? ` → ${referral.receiving_facility}` : ""}
               </p>
-              <small style={{ color: "var(--muted)" }}>{transferLabel(referral.transfer_mode)}</small>
+              <small style={{ color: "var(--muted)" }}>{transferLabel(referral.transfer_mode, referral.receiving_facility)}</small>
               {referral.patient_location && (
                 <small style={{ display: "block", color: "var(--muted)" }}>Pickup: {referral.patient_location}</small>
               )}
@@ -231,7 +242,7 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
               <ScrollText size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />
             </div>
             {events.length === 0 ? (
-              <p className="empty-state">No transitions recorded yet — this case is still in draft.</p>
+              <p className="empty-state">No transitions recorded yet. This case is still in draft.</p>
             ) : (
               <div className="audit-card" style={{ margin: 0, width: "100%", transform: "none", boxShadow: "none", border: "1px solid var(--line)" }}>
                 <div className="audit-title" style={{ display: "flex" }}>
@@ -267,7 +278,12 @@ export default function ReferralDetail({ params }: { params: Promise<{ id: strin
 
             {referral.status === "ready_to_send" && isReferringHospital && (
               <button className="button full-button" disabled={busy} onClick={() => runAction("send")}>
-                <Send size={16} /> Send to hospitals
+                <Send size={16} />{" "}
+                {referral.transfer_mode === "targeted" && referral.receiving_facility
+                  ? `Send to ${referral.receiving_facility}`
+                  : referral.transfer_mode === "external"
+                    ? "Broadcast to all hospitals"
+                    : "Send to hospitals"}
               </button>
             )}
 

@@ -167,7 +167,7 @@ export default function ReportsPage() {
           <div className="panel-heading"><div><h2>Bed &amp; capacity insight</h2><p>Utilisation signals for ICU / HDU / NICU</p></div></div>
           <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.55, margin: 0 }}>
             Peak demand is driven by {byCareLevel.sort((a, b) => b.count - a.count)[0]?.label ?? "ICU"} referrals.
-            Review the <strong>Bed &amp; capacity</strong> module when acceptance rates drop — it usually means published bed counts are stale.
+            Review the <strong>Bed &amp; capacity</strong> module when acceptance rates drop. It usually means published bed counts are stale.
           </p>
         </div>
         <div className="panel">

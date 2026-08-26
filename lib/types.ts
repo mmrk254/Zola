@@ -13,7 +13,7 @@ export type ReferralStatus =
 export type CareLevel = "ICU" | "HDU" | "NICU";
 export type Urgency = "critical" | "urgent" | "routine";
 export type FacilityStatus = "open" | "at_capacity" | "closed";
-export type TransferMode = "external" | "internal_onsite" | "internal_offsite";
+export type TransferMode = "external" | "targeted" | "internal_onsite" | "internal_offsite";
 export type AmbulanceStatus = "available" | "dispatched";
 
 export type Hospital = {

@@ -25,6 +25,7 @@ function NewReferralForm() {
   const preHospitalId = searchParams.get("hospital_id");
   const preHospitalName = searchParams.get("hospital_name");
   const prePatientLocation = searchParams.get("patient_location");
+  const isBroadcast = searchParams.get("broadcast") === "true";
 
   const [consent, setConsent] = useState([false, false, false, false]);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +45,8 @@ function NewReferralForm() {
     !session.networkAdmin &&
     session.memberships.filter((m) => m.status === "active").length > 1;
 
-  const hasPreselection = Boolean(preCareLevel && preHospitalId);
+  const hasPreselection = Boolean(preCareLevel && (preHospitalId || isBroadcast));
+  const isTargeted = Boolean(preHospitalId && !isBroadcast);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -81,9 +83,9 @@ function NewReferralForm() {
           care_level: form.care_level,
           urgency: form.urgency,
           clinical_summary: form.clinical_summary,
-          transfer_mode: "external",
+          transfer_mode: isBroadcast ? "external" : isTargeted ? "targeted" : "external",
           patient_location: form.patient_location.trim(),
-          receiving_facility_id: preHospitalId,
+          receiving_facility_id: isTargeted ? preHospitalId : null,
           acting_hospital_id: activeHospitalId
         })
       });
@@ -121,7 +123,12 @@ function NewReferralForm() {
           <h2>Referral {submitted.reference} saved</h2>
           <p>
             Consent is confirmed. Open the referral and send it
-            {preHospitalName ? ` to ${preHospitalName}` : ""}.
+            {isBroadcast
+              ? " to all network hospitals"
+              : preHospitalName
+                ? ` to ${preHospitalName} only`
+                : ""}
+            .
           </p>
           <Link className="button" href={`/referrals/${submitted.id}`}>
             Open referral
@@ -138,7 +145,11 @@ function NewReferralForm() {
             <section className="form-card preselection-summary">
               <div className="preselection-chips">
                 <span className="chip">{form.care_level} bed</span>
-                {preHospitalName && <span className="chip">{preHospitalName}</span>}
+                {isBroadcast ? (
+                  <span className="chip broadcast-chip">Broadcast to all hospitals</span>
+                ) : (
+                  preHospitalName && <span className="chip">{preHospitalName}</span>
+                )}
                 {form.patient_location && <span className="chip">{form.patient_location}</span>}
               </div>
             </section>

@@ -19,6 +19,8 @@ const hasValidConfig = isValidSupabaseUrl(url) && Boolean(anonKey);
 // instead of crashing during setup.
 // The browser client persists the session in cookies so Next.js middleware and
 // server routes see the same authenticated user after sign-in.
-export const supabase = hasValidConfig ? createBrowserClient(url!, anonKey!) : null;
+export const supabase = hasValidConfig
+  ? createBrowserClient(url!, anonKey!, { auth: { persistSession: true, autoRefreshToken: true } })
+  : null;
 
 export const isSupabaseConfigured = hasValidConfig;

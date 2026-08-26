@@ -111,7 +111,7 @@ export default function CapacityPage() {
             <div>
               <h2>Available beds by care level</h2>
               <p>
-                Charge staff should update this whenever capacity changes — it drives real-time matching for incoming
+                Charge staff should update this whenever capacity changes. It drives real-time matching for incoming
                 referrals.
               </p>
             </div>

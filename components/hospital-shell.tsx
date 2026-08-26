@@ -4,19 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  BedDouble,
-  Bell,
   Building2,
   ChevronLeft,
   ChevronRight,
   ClipboardPlus,
-  FileBarChart2,
-  Inbox,
-  LayoutDashboard,
   Menu,
   Plus,
-  Truck,
-  Users,
   X
 } from "lucide-react";
 import { ZolaLogo } from "@/components/zola-logo";
@@ -26,15 +19,8 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
-  { href: "/workspace/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/referrals/new", label: "New referral", icon: ClipboardPlus },
-  { href: "/inbox", label: "Referral inbox", icon: Inbox },
-  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
-  { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
-  { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
-  { href: "/workspace/staff", label: "Staff accounts", icon: Users },
-  { href: "/workspace/reports", label: "Reports", icon: FileBarChart2 },
-  { href: "/workspace/settings", label: "Facility settings", icon: Building2 }
+  { href: "/home", label: "New referral", icon: ClipboardPlus },
+  { href: "/workspace/dashboard", label: "Facility centre", icon: Building2 }
 ];
 
 function Nav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {

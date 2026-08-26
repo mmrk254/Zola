@@ -7,6 +7,11 @@ export type Database = {
           name: string;
           type: string;
           contact_info: string | null;
+          address?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          alert_phone?: string | null;
+          alert_email?: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["hospitals"]["Row"]> & {

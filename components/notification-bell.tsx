@@ -13,12 +13,12 @@ import { Referral, ReferralStatus } from "@/lib/types";
 // Kept intentionally small for the MVP: anything that needs a clinician or
 // admin to look at the case again.
 const NOTIFY_STATUSES: Partial<Record<ReferralStatus, string>> = {
-  searching: "Broadcast to hospitals — awaiting a response",
-  hospital_accepted: "Hospital accepted — confirm with next of kin",
-  family_confirmed: "Family confirmed — arrange ambulance",
-  ambulance_arranged: "Ambulance arranged — update when en route",
-  patient_en_route: "Patient en route — awaiting arrival",
-  patient_received: "Patient received — ready to close the case"
+  searching: "Broadcast to hospitals. Awaiting a response.",
+  hospital_accepted: "Hospital accepted. Confirm with next of kin.",
+  family_confirmed: "Family confirmed. Arrange ambulance.",
+  ambulance_arranged: "Ambulance arranged. Update when en route.",
+  patient_en_route: "Patient en route. Awaiting arrival.",
+  patient_received: "Patient received. Ready to close the case."
 };
 
 const READ_KEY = "zola_notifications_read";
@@ -43,13 +43,18 @@ export function useNotifications() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const params = activeHospitalId ? `?hospital_id=${activeHospitalId}` : "";
-    fetch(`/api/referrals${params}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.referrals) setReferrals(data.referrals);
-      })
-      .catch(() => {});
+    const load = () => {
+      const params = activeHospitalId ? `?hospital_id=${activeHospitalId}` : "";
+      fetch(`/api/referrals${params}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.referrals) setReferrals(data.referrals);
+        })
+        .catch(() => {});
+    };
+    load();
+    const interval = window.setInterval(load, 30000);
+    return () => window.clearInterval(interval);
   }, [activeHospitalId]);
 
   const items = useMemo(
@@ -92,6 +97,23 @@ export function NotificationBell() {
   const allNotificationsHref = pathname.startsWith("/workspace") ? "/workspace/notifications" : "/notifications";
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const announcedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    unread.forEach((item) => {
+      if (announcedRef.current.has(item.id)) return;
+      announcedRef.current.add(item.id);
+      new Notification(`Zola Referrals: ${item.reference}`, { body: item.message, icon: "/icons/icon-192.png" });
+    });
+  }, [unread]);
+
+  async function openNotifications() {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    setOpen((value) => !value);
+  }
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -103,7 +125,7 @@ export function NotificationBell() {
 
   return (
     <div className="notif-wrap" ref={wrapRef}>
-      <button className="icon-button" aria-label="Notifications" type="button" onClick={() => setOpen((v) => !v)}>
+      <button className="icon-button" aria-label="Notifications" type="button" onClick={() => void openNotifications()}>
         <Bell size={17} />
         {unread.length > 0 && <span className="notif-dot">{unread.length > 9 ? "9+" : unread.length}</span>}
       </button>

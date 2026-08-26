@@ -42,7 +42,7 @@ export default function WorkspaceLoginPage() {
       return;
     }
 
-    window.location.assign("/workspace/dashboard");
+    window.location.assign("/home");
   }
 
   return (
