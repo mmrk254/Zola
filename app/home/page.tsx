@@ -17,7 +17,7 @@ import {
 import { Shell } from "@/components/shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { HospitalPickerMap } from "@/components/hospital-picker-map";
-import { formatDistance, getUserLocation } from "@/lib/geolocation";
+import { formatDistance, getUserLocation, haversineKm } from "@/lib/geolocation";
 import { CareLevel } from "@/lib/types";
 import { useWorkspace } from "@/lib/use-workspace";
 
@@ -74,6 +74,35 @@ export default function HomePage() {
     }, 350);
     return () => window.clearTimeout(timer);
   }, [patientLocation, patientCoords]);
+
+  useEffect(() => {
+    if (!patientCoords || !selectedHospital) return;
+    const directDistance = haversineKm(patientCoords, {
+      latitude: selectedHospital.latitude,
+      longitude: selectedHospital.longitude
+    });
+    const estimatedDistance = Math.max(0.5, directDistance * 1.28);
+    setRoute({
+      distance: `${estimatedDistance.toFixed(1)} km`,
+      duration: `${Math.max(3, Math.round((estimatedDistance / 28) * 60))} min`
+    });
+    const controller = new AbortController();
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${patientCoords.longitude},${patientCoords.latitude};${selectedHospital.longitude},${selectedHospital.latitude}?overview=false`,
+      { signal: controller.signal }
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        const result = data.routes?.[0];
+        if (!result) return;
+        setRoute({
+          distance: `${(result.distance / 1000).toFixed(1)} km`,
+          duration: `${Math.max(1, Math.round(result.duration / 60))} min`
+        });
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [patientCoords, selectedHospital]);
 
   async function selectBed(level: CareLevel) {
     setSelectedBed(level);
@@ -353,8 +382,8 @@ export default function HomePage() {
             )}
             {patientCoords && selectedHospital && (
               <div className="patient-location-map">
-                <HospitalPickerMap userLocation={patientCoords} hospitals={[selectedHospital]} careLevel={selectedBed} selectedId={selectedHospital.id} onSelect={() => {}} onRouteChange={setRoute} />
-                <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Calculating route..."}</small></div></div>
+                <HospitalPickerMap userLocation={patientCoords} hospitals={[selectedHospital]} careLevel={selectedBed} selectedId={selectedHospital.id} onSelect={() => {}} />
+                <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Preparing route..."}</small></div></div>
               </div>
             )}
 
