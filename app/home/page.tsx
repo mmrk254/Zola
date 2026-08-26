@@ -171,6 +171,9 @@ export default function HomePage() {
   function startBroadcast() {
     setBroadcastMode(true);
     setSelectedHospital(null);
+    setOriginType("offsite");
+    setPatientCoords(null);
+    setPatientLocation("");
     setStep("location");
   }
 
@@ -260,6 +263,7 @@ export default function HomePage() {
               <Navigation size={22} />
               <h2>{selectedBed} beds near you</h2>
               <p>Only hospitals with open {selectedBed} capacity are shown.</p>
+              <button type="button" className="general-broadcast-link" onClick={startBroadcast}>Use general broadcast instead</button>
             </div>
 
             {loadingHospitals && (

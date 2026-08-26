@@ -34,13 +34,19 @@ export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelec
     mapInstance.current.fitBounds(bounds, 42);
   }, [mapsReady, apiKey, userLocation, hospitals, selectedId, onSelect, routeCoordinates]);
 
-  const fallbackUrl = useMemo(() => {
+  const fallbackBounds = useMemo(() => {
     const target = selected ?? hospitals[0]; const lat = target ? (target.latitude + userLocation.latitude) / 2 : userLocation.latitude; const lng = target ? (target.longitude + userLocation.longitude) / 2 : userLocation.longitude;
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.04}%2C${lat - 0.04}%2C${lng + 0.04}%2C${lat + 0.04}&layer=mapnik&marker=${userLocation.latitude}%2C${userLocation.longitude}`;
+    return { minLat: lat - 0.04, maxLat: lat + 0.04, minLng: lng - 0.04, maxLng: lng + 0.04 };
   }, [userLocation, hospitals, selected]);
+  const fallbackUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${fallbackBounds.minLng}%2C${fallbackBounds.minLat}%2C${fallbackBounds.maxLng}%2C${fallbackBounds.maxLat}&layer=mapnik&marker=${userLocation.latitude}%2C${userLocation.longitude}`;
+  const fallbackLine = routeCoordinates.map((point) => {
+    const x = ((point.longitude - fallbackBounds.minLng) / (fallbackBounds.maxLng - fallbackBounds.minLng)) * 100;
+    const y = ((fallbackBounds.maxLat - point.latitude) / (fallbackBounds.maxLat - fallbackBounds.minLat)) * 100;
+    return `${x},${y}`;
+  }).join(" ");
 
   return <div className="stable-map">
-    {apiKey ? <><Script src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}`} strategy="afterInteractive" onLoad={() => setMapsReady(true)} /><div ref={mapElement} className="hospital-map-wrap" aria-label="Patient transport map" /></> : <iframe title="Patient and facility map" src={fallbackUrl} className="hospital-map-wrap" loading="lazy" />}
+    {apiKey ? <><Script src={`https://maps.googleapis.com/maps/api/js?key=${apiKey}`} strategy="afterInteractive" onLoad={() => setMapsReady(true)} /><div ref={mapElement} className="hospital-map-wrap" aria-label="Patient transport map" /></> : <div className="fallback-map"><iframe title="Patient and facility map" src={fallbackUrl} className="hospital-map-wrap" loading="lazy" />{fallbackLine && <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points={fallbackLine} /></svg>}</div>}
     <div className="stable-map-points"><span className="map-point patient">Patient location</span>{hospitals.map((hospital) => <button key={hospital.id} type="button" className={hospital.id === selectedId ? "selected" : ""} onClick={() => onSelect(hospital)}>{hospital.name} · {hospital.available_beds ?? 0} {careLevel} bed{hospital.available_beds === 1 ? "" : "s"}</button>)}</div>
   </div>;
 }
