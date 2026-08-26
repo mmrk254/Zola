@@ -19,7 +19,7 @@ export default function WorkspaceSettingsPage() {
     fetch(`/api/hospitals/${hospital.hospital_id}`)
       .then((r) => r.json())
       .then((data) => data.hospital && setForm(data.hospital))
-      .catch(() => setForm((value) => ({ ...value, name: hospital.hospital_name })));
+      .catch(() => setForm((value) => ({ ...value, name: hospital.hospital_name ?? "" })));
   }, [hospital?.hospital_id, hospital?.hospital_name]);
 
   async function save(event: FormEvent) {
