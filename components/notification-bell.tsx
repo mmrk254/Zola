@@ -104,7 +104,9 @@ export function NotificationBell() {
     unread.forEach((item) => {
       if (announcedRef.current.has(item.id)) return;
       announcedRef.current.add(item.id);
-      new Notification(`Zola Referrals: ${item.reference}`, { body: item.message, icon: "/icons/icon-192.png" });
+      try {
+        new Notification(`Zola Referrals: ${item.reference}`, { body: item.message, icon: "/icons/icon-192.png" });
+      } catch {}
     });
   }, [unread]);
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { WorkspaceProvider } from "@/lib/use-workspace";
 import { PwaInstallBanner } from "@/components/pwa-install";
+import { NotificationPermission } from "@/components/notification-permission";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <WorkspaceProvider>
           <PwaInstallBanner />
+          <NotificationPermission />
           {children}
         </WorkspaceProvider>
       </body>

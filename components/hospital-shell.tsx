@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   Building2,
   BedDouble,
-  Bell,
   ChevronLeft,
   ChevronRight,
   ClipboardPlus,
@@ -27,7 +26,6 @@ const NAV = [
   { href: "/home", label: "New referral", icon: ClipboardPlus },
   { href: "/workspace/dashboard", label: "Hospital dashboard", icon: Building2 },
   { href: "/inbox", label: "Referral inbox", icon: Inbox },
-  { href: "/workspace/notifications", label: "Notifications", icon: Bell },
   { href: "/workspace/capacity", label: "Bed & capacity", icon: BedDouble },
   { href: "/workspace/ambulances", label: "Ambulances", icon: Truck },
   { href: "/workspace/staff", label: "Staff accounts", icon: Users },

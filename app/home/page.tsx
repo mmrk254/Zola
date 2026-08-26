@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Baby,
   BedDouble,
+  Building2,
   HeartPulse,
   Loader2,
   MapPin,
@@ -45,10 +46,11 @@ const BED_OPTIONS: {
 
 type Step = "bed" | "hospitals" | "location";
 type LocationMatch = { display_name: string; lat: string; lon: string };
+type Coordinates = { latitude: number; longitude: number };
 
 export default function HomePage() {
   const router = useRouter();
-  const { session } = useWorkspace();
+  const { session, activeHospitalId } = useWorkspace();
   const [step, setStep] = useState<Step>("bed");
   const [selectedBed, setSelectedBed] = useState<CareLevel | null>(null);
   const [selectedHospital, setSelectedHospital] = useState<NearbyHospital | null>(null);
@@ -60,7 +62,11 @@ export default function HomePage() {
   const [broadcastMode, setBroadcastMode] = useState(false);
   const [route, setRoute] = useState<{ duration: string; distance: string } | null>(null);
   const [locationMatches, setLocationMatches] = useState<LocationMatch[]>([]);
-  const [patientCoords, setPatientCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [patientCoords, setPatientCoords] = useState<Coordinates | null>(null);
+  const [facilityCoords, setFacilityCoords] = useState<Coordinates | null>(null);
+  const [facilityName, setFacilityName] = useState("");
+  const [originType, setOriginType] = useState<"onsite" | "offsite" | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<Coordinates[]>([]);
   const [findingLocation, setFindingLocation] = useState(false);
 
   useEffect(() => {
@@ -76,7 +82,22 @@ export default function HomePage() {
   }, [patientLocation, patientCoords]);
 
   useEffect(() => {
+    if (!activeHospitalId) return;
+    fetch(`/api/hospitals/${activeHospitalId}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.hospital) return;
+        setFacilityName(data.hospital.name ?? "Your facility");
+        if (data.hospital.latitude != null && data.hospital.longitude != null) {
+          setFacilityCoords({ latitude: data.hospital.latitude, longitude: data.hospital.longitude });
+        }
+      })
+      .catch(() => {});
+  }, [activeHospitalId]);
+
+  useEffect(() => {
     if (!patientCoords || !selectedHospital) return;
+    setRouteCoordinates([]);
     const directDistance = haversineKm(patientCoords, {
       latitude: selectedHospital.latitude,
       longitude: selectedHospital.longitude
@@ -88,7 +109,7 @@ export default function HomePage() {
     });
     const controller = new AbortController();
     fetch(
-      `https://router.project-osrm.org/route/v1/driving/${patientCoords.longitude},${patientCoords.latitude};${selectedHospital.longitude},${selectedHospital.latitude}?overview=false`,
+      `https://router.project-osrm.org/route/v1/driving/${patientCoords.longitude},${patientCoords.latitude};${selectedHospital.longitude},${selectedHospital.latitude}?overview=full&geometries=geojson`,
       { signal: controller.signal }
     )
       .then((response) => response.json())
@@ -99,6 +120,7 @@ export default function HomePage() {
           distance: `${(result.distance / 1000).toFixed(1)} km`,
           duration: `${Math.max(1, Math.round(result.duration / 60))} min`
         });
+        setRouteCoordinates((result.geometry?.coordinates ?? []).map(([longitude, latitude]: [number, number]) => ({ latitude, longitude })));
       })
       .catch(() => {});
     return () => controller.abort();
@@ -139,6 +161,10 @@ export default function HomePage() {
 
   function proceedWithHospital() {
     if (!selectedHospital) return;
+    setOriginType(null);
+    setPatientCoords(null);
+    setPatientLocation("");
+    setRoute(null);
     setStep("location");
   }
 
@@ -174,6 +200,9 @@ export default function HomePage() {
       if (!broadcastMode) setSelectedHospital(null);
       setBroadcastMode(false);
       setPatientLocation("");
+      setPatientCoords(null);
+      setOriginType(null);
+      setRouteCoordinates([]);
     } else if (step === "hospitals") {
       setStep("bed");
       setSelectedBed(null);
@@ -270,10 +299,9 @@ export default function HomePage() {
                   careLevel={selectedBed}
                   selectedId={selectedHospital?.id}
                   onSelect={selectHospital}
-                  onRouteChange={setRoute}
                 />
 
-                {selectedHospital && (
+                {route && selectedHospital && (
                   <div className="route-summary">
                     <Navigation size={18} />
                     <div>
@@ -365,7 +393,26 @@ export default function HomePage() {
               </div>
             ) : null}
 
-            <label className="uber-location-input">
+            {!broadcastMode && selectedHospital && !originType && (
+              <div className="origin-options">
+                <button type="button" onClick={() => {
+                  const origin = facilityCoords ?? userCoords;
+                  if (!origin) return;
+                  setOriginType("onsite");
+                  setPatientCoords(origin);
+                  setPatientLocation(facilityName || "Referring facility");
+                }}>
+                  <Building2 size={19} />
+                  <span><strong>Patient is on site</strong><small>Start from the referring facility.</small></span>
+                </button>
+                <button type="button" onClick={() => setOriginType("offsite")}>
+                  <MapPin size={19} />
+                  <span><strong>Patient is off site</strong><small>Search and select the patient&apos;s location.</small></span>
+                </button>
+              </div>
+            )}
+
+            {originType === "offsite" && <label className="uber-location-input">
               Patient&apos;s current location
               <input
                 autoFocus
@@ -373,16 +420,16 @@ export default function HomePage() {
                 value={patientLocation}
                 onChange={(e) => { setPatientLocation(e.target.value); setPatientCoords(null); }}
               />
-            </label>
-            {findingLocation && <p className="location-search-status">Finding locations...</p>}
-            {locationMatches.length > 0 && (
+            </label>}
+            {originType === "offsite" && findingLocation && <p className="location-search-status">Finding locations...</p>}
+            {originType === "offsite" && locationMatches.length > 0 && (
               <div className="location-results">
                 {locationMatches.map((match) => <button type="button" key={`${match.lat}:${match.lon}`} onClick={() => { setPatientLocation(match.display_name); setPatientCoords({ latitude: Number(match.lat), longitude: Number(match.lon) }); setLocationMatches([]); }}><MapPin size={15} /><span>{match.display_name}</span></button>)}
               </div>
             )}
             {patientCoords && selectedHospital && (
               <div className="patient-location-map">
-                <HospitalPickerMap userLocation={patientCoords} hospitals={[selectedHospital]} careLevel={selectedBed} selectedId={selectedHospital.id} onSelect={() => {}} />
+                <HospitalPickerMap userLocation={patientCoords} hospitals={[selectedHospital]} careLevel={selectedBed} selectedId={selectedHospital.id} onSelect={() => {}} routeCoordinates={routeCoordinates} />
                 <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Preparing route..."}</small></div></div>
               </div>
             )}
