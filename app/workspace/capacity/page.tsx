@@ -27,6 +27,8 @@ export default function CapacityPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [units, setUnits] = useState<any[]>([]);
+  const [unit, setUnit] = useState({ name: "", care_level: "ICU", unit_type: "ward", capacity: "", available_beds: "" });
 
   useEffect(() => {
     if (!isSupabaseConfigured || !activeHospitalId) {
@@ -44,6 +46,7 @@ export default function CapacityPage() {
       })
       .catch(() => setCapacity(CARE_LEVELS.map((level) => blankSnapshot(activeHospitalId, level))))
       .finally(() => setLoading(false));
+    fetch(`/api/hospitals/${activeHospitalId}/units`).then((res) => res.ok ? res.json() : null).then((data) => setUnits(data?.units ?? [])).catch(() => {});
   }, [activeHospitalId]);
 
   function updateField(level: CareLevel, field: "available_beds" | "facility_status", value: string) {
@@ -57,6 +60,13 @@ export default function CapacityPage() {
           : c
       )
     );
+  }
+
+  async function addUnit(event: FormEvent) {
+    event.preventDefault(); if (!activeHospitalId) return; setError(null);
+    const response = await fetch(`/api/hospitals/${activeHospitalId}/units`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(unit) });
+    const data = await response.json(); if (!response.ok) { setError(data.error ?? "Could not add unit."); return; }
+    setUnits((items) => [...items, data.unit]); setUnit({ name: "", care_level: "ICU", unit_type: "ward", capacity: "", available_beds: "" });
   }
 
   async function submit(e: FormEvent) {
@@ -157,6 +167,18 @@ export default function CapacityPage() {
           </div>
         </section>
       </form>
+      <section className="panel form-card compact-card" style={{ maxWidth: 820, marginTop: 18 }}>
+        <div className="panel-heading"><div><h2>Rooms and units</h2><p>Add wards, rooms, bays, or named units so your team can select the precise destination.</p></div></div>
+        <form className="form-grid" onSubmit={addUnit}>
+          <label>Unit or room name<input required value={unit.name} placeholder="e.g. ICU Bay 2" onChange={(e) => setUnit({ ...unit, name: e.target.value })} /></label>
+          <label>Care level<select value={unit.care_level} onChange={(e) => setUnit({ ...unit, care_level: e.target.value })}><option>ICU</option><option>HDU</option><option>NICU</option></select></label>
+          <label>Type<input value={unit.unit_type} placeholder="Ward, room, bay" onChange={(e) => setUnit({ ...unit, unit_type: e.target.value })} /></label>
+          <label>Total beds<input type="number" min="0" value={unit.capacity} onChange={(e) => setUnit({ ...unit, capacity: e.target.value })} /></label>
+          <label>Available beds<input type="number" min="0" value={unit.available_beds} onChange={(e) => setUnit({ ...unit, available_beds: e.target.value })} /></label>
+          <div className="form-actions"><button className="button" type="submit">Add unit</button></div>
+        </form>
+        {units.length > 0 && <div className="unit-list">{units.map((item) => <div key={item.id}><strong>{item.name}</strong><span>{item.care_level} · {item.unit_type} · {item.available_beds}/{item.capacity} beds available</span></div>)}</div>}
+      </section>
     </HospitalShell>
   );
 }

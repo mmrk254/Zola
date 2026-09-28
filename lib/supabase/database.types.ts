@@ -1,6 +1,11 @@
 export type Database = {
   public: {
     Tables: {
+      facility_units: {
+        Row: { id: string; hospital_id: string; name: string; care_level: "ICU" | "HDU" | "NICU"; unit_type: string; capacity: number; available_beds: number; active: boolean; created_at: string; updated_at: string; };
+        Insert: Partial<Database["public"]["Tables"]["facility_units"]["Row"]> & { hospital_id: string; name: string; care_level: "ICU" | "HDU" | "NICU"; };
+        Update: Partial<Database["public"]["Tables"]["facility_units"]["Row"]>;
+      };
       hospitals: {
         Row: {
           id: string;

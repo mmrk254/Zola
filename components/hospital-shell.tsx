@@ -20,6 +20,7 @@ import { ZolaLogo } from "@/components/zola-logo";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
 import { NotificationBell } from "@/components/notification-bell";
+import { ThemeSelector } from "@/components/theme-selector";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV = [
@@ -149,6 +150,7 @@ export function HospitalShell({
           </div>
           <div className="header-actions">
             <FacilitySelector />
+            <ThemeSelector />
             <NotificationBell />
             {action}
           </div>

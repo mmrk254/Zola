@@ -18,6 +18,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SessionControls } from "@/components/session-controls";
 import { FacilitySelector } from "@/components/facility-selector";
 import { NotificationBell } from "@/components/notification-bell";
+import { ThemeSelector } from "@/components/theme-selector";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
@@ -168,6 +169,7 @@ export function Shell({
               <Plus size={15} /> New referral
             </Link>
             <FacilitySelector />
+            <ThemeSelector />
             <NotificationBell />
             {action}
           </div>

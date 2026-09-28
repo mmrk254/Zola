@@ -3,6 +3,7 @@ import "./globals.css";
 import { WorkspaceProvider } from "@/lib/use-workspace";
 import { PwaInstallBanner } from "@/components/pwa-install";
 import { NotificationPermission } from "@/components/notification-permission";
+import { PushSubscription } from "@/components/push-subscription";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <WorkspaceProvider>
           <PwaInstallBanner />
           <NotificationPermission />
+          <PushSubscription />
           {children}
         </WorkspaceProvider>
       </body>

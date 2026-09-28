@@ -39,6 +39,8 @@
   --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
+[data-theme="ocean"] { --bg-premium: #eef5f8; --bg-premium-soft: #dcebf1; --card-premium: #fafdff; --card-premium-strong: #ffffff; --navy: #12334a; --blue: #2474a8; --teal: #147d95; --teal-deep: #105a70; --cream: #f8fcfd; --cream-warm: #e3f0f4; --line: #cbdfe6; }
+[data-theme="slate"] { --bg-premium: #f4f5f7; --bg-premium-soft: #e4e7eb; --card-premium: #ffffff; --card-premium-strong: #ffffff; --navy: #252d38; --blue: #536b8e; --teal: #5d697a; --teal-deep: #3d4857; --cream: #fafbfc; --cream-warm: #e9edf2; --line: #d8dee7; }
 
 * { box-sizing: border-box; }
 body {
@@ -126,6 +128,8 @@ button, input, select, textarea { font: inherit; }
 .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .icon-button { border: 1px solid var(--line); height: 34px; width: 34px; color: #546579; background: var(--cream); border-radius: 8px; display: grid; place-items: center; cursor: pointer; transition: .15s; }
 .icon-button:hover { border-color: #cfc4b0; background: #fff; }
+.theme-selector { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--cream); color: var(--teal-deep); }.theme-selector select { border: 0; max-width: 74px; background: transparent; color: var(--navy); font-size: 12px; font-weight: 700; outline: 0; }
+.unit-list { display: grid; gap: 8px; margin-top: 16px; }.unit-list div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }.unit-list span { color: var(--muted); font-size: 12px; }
 .content { max-width: 1240px; margin: auto; padding: 20px 24px 40px; width: 100%; }
 .header-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--cream-warm); font-size: 12px; font-weight: 600; color: #5B6673; }
 
