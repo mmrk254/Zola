@@ -6,7 +6,6 @@ import { HospitalShell } from "@/components/hospital-shell";
 import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useWorkspace } from "@/lib/use-workspace";
-import { demoCapacity } from "@/lib/demo-data";
 import { CapacitySnapshot, CareLevel, FacilityStatus } from "@/lib/types";
 
 const CARE_LEVELS: CareLevel[] = ["ICU", "HDU", "NICU"];
@@ -22,7 +21,8 @@ function blankSnapshot(hospitalId: string, level: CareLevel): CapacitySnapshot {
 
 export default function CapacityPage() {
   const { activeHospitalId } = useWorkspace();
-  const [capacity, setCapacity] = useState<CapacitySnapshot[]>(demoCapacity);
+  const [capacity, setCapacity] = useState<CapacitySnapshot[]>([]);
+  const [loadedHospitalId, setLoadedHospitalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -31,25 +31,32 @@ export default function CapacityPage() {
   const [unit, setUnit] = useState({ name: "", care_level: "ICU", unit_type: "ward", capacity: "", available_beds: "" });
 
   useEffect(() => {
+    const controller = new AbortController();
+    setCapacity([]); setUnits([]); setLoadedHospitalId(null); setSaved(false); setError(null);
     if (!isSupabaseConfigured || !activeHospitalId) {
       setLoading(false);
       return;
     }
-    fetch(`/api/hospitals/${activeHospitalId}/capacity`)
-      .then((res) => (res.ok ? res.json() : null))
+    setLoading(true);
+    fetch(`/api/hospitals/${activeHospitalId}/capacity`, { cache: "no-store", signal: controller.signal })
+      .then(async res => { const data = await res.json(); if (!res.ok) throw new Error(data.error ?? "Could not load capacity."); return data; })
       .then((data) => {
+        if (controller.signal.aborted) return;
         if (data?.capacity?.length) {
           setCapacity(data.capacity);
         } else {
           setCapacity(CARE_LEVELS.map((level) => blankSnapshot(activeHospitalId, level)));
         }
+        setLoadedHospitalId(activeHospitalId);
       })
-      .catch(() => setCapacity(CARE_LEVELS.map((level) => blankSnapshot(activeHospitalId, level))))
-      .finally(() => setLoading(false));
-    fetch(`/api/hospitals/${activeHospitalId}/units`).then((res) => res.ok ? res.json() : null).then((data) => setUnits(data?.units ?? [])).catch(() => {});
+      .catch(err => { if (!controller.signal.aborted) setError(err.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    fetch(`/api/hospitals/${activeHospitalId}/units`, { cache: "no-store", signal: controller.signal }).then((res) => res.ok ? res.json() : null).then((data) => { if (!controller.signal.aborted) setUnits(data?.units ?? []); }).catch(() => {});
+    return () => controller.abort();
   }, [activeHospitalId]);
 
   function updateField(level: CareLevel, field: "available_beds" | "facility_status", value: string) {
+    setSaved(false);
     setCapacity((current) =>
       current.map((c) =>
         c.care_level === level
@@ -82,6 +89,10 @@ export default function CapacityPage() {
       setError("Select which facility you are updating.");
       return;
     }
+    if (loadedHospitalId !== activeHospitalId || capacity.some(row => row.hospital_id !== activeHospitalId)) {
+      setError("Wait for this hospital's capacity to load before saving.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -94,6 +105,8 @@ export default function CapacityPage() {
       if (!res.ok) throw new Error(data.error ?? "Could not save capacity.");
       if (data.capacity) setCapacity(data.capacity);
       setSaved(true);
+      window.dispatchEvent(new Event("zola-capacity-updated"));
+      try { localStorage.setItem("zola_capacity_updated", `${activeHospitalId}:${Date.now()}`); } catch { /* Polling still refreshes other views. */ }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -108,7 +121,7 @@ export default function CapacityPage() {
       {saved && (
         <div className="notice">
           <BedDouble size={16} />
-          <span>Capacity updated. Hospitals matching new referrals will see this immediately.</span>
+          <span>Capacity saved. Hospital maps refresh automatically within 15 seconds, or immediately when reopened.</span>
         </div>
       )}
       {!isSupabaseConfigured && (
@@ -134,7 +147,9 @@ export default function CapacityPage() {
                 <label className="capacity-count" style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
                     type="number"
+                    aria-label={`${c.care_level} available beds`}
                     min={0}
+                    step={1}
                     value={c.available_beds}
                     disabled={loading}
                     onChange={(e) => updateField(c.care_level, "available_beds", e.target.value)}
@@ -161,7 +176,7 @@ export default function CapacityPage() {
           </div>
 
           <div className="form-actions">
-            <button className="button" type="submit" disabled={saving || loading}>
+            <button className="button" type="submit" disabled={saving || loading || !activeHospitalId || loadedHospitalId !== activeHospitalId}>
               <Save size={16} /> {saving ? "Saving..." : "Save capacity"}
             </button>
           </div>

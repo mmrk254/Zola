@@ -5,6 +5,9 @@ import { haversineKm } from "@/lib/geolocation";
 import { demoHospitals, demoCapacity } from "@/lib/demo-data";
 import { CareLevel } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+const FRESH = { "Cache-Control": "private, no-store, max-age=0" };
+
 export type NearbyHospital = {
   id: string;
   name: string;
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest) {
   const lng = parseFloat(request.nextUrl.searchParams.get("lng") ?? "");
   const careLevel = request.nextUrl.searchParams.get("care_level") as CareLevel | null;
 
-  if (isNaN(lat) || isNaN(lng)) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return NextResponse.json({ error: "lat and lng are required" }, { status: 400 });
   }
   if (!careLevel || !["ICU", "HDU", "NICU"].includes(careLevel)) {
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     const results = buildNearbyFromDemo(lat, lng, careLevel);
-    return NextResponse.json({ hospitals: results });
+    return NextResponse.json({ hospitals: results }, { headers: FRESH });
   }
 
   const supabase = getServiceClient();
@@ -86,7 +89,7 @@ export async function GET(request: NextRequest) {
     })
     .sort((a, b) => a.distance_km - b.distance_km);
 
-  return NextResponse.json({ hospitals: results });
+  return NextResponse.json({ hospitals: results }, { headers: FRESH });
 }
 
 function buildNearbyFromDemo(lat: number, lng: number, careLevel: CareLevel): NearbyHospital[] {

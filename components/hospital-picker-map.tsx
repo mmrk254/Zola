@@ -7,11 +7,11 @@ import "leaflet/dist/leaflet.css";
 
 export type MapHospital = { id: string; name: string; latitude: number; longitude: number; address?: string | null; distance_km?: number; available_beds?: number };
 type Coordinates = { latitude: number; longitude: number };
-type Props = { userLocation: Coordinates; hospitals: MapHospital[]; selectedId?: string | null; onSelect: (hospital: MapHospital) => void; careLevel: string; routeCoordinates?: Coordinates[] };
+type Props = { userLocation: Coordinates; hospitals: MapHospital[]; selectedId?: string | null; onSelect: (hospital: MapHospital) => void; careLevel: string; routeCoordinates?: Coordinates[]; pickupLabel?: string };
 const EMPTY_ROUTE: Coordinates[] = [];
 const valid = (point: Coordinates) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude) && Math.abs(point.latitude) <= 90 && Math.abs(point.longitude) <= 180;
 
-export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelect, careLevel, routeCoordinates = EMPTY_ROUTE }: Props) {
+export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelect, careLevel, routeCoordinates = EMPTY_ROUTE, pickupLabel = "Patient location" }: Props) {
   const mapElement = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null);
   const engine = useRef<typeof Leaflet | null>(null);
@@ -32,7 +32,7 @@ export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelec
     import("leaflet").then((L) => {
       if (cancelled || !mapElement.current) return;
       engine.current = L;
-      const instance = L.map(mapElement.current, { zoomControl: false, scrollWheelZoom: true, minZoom: 3, maxZoom: 19, attributionControl: true });
+      const instance = L.map(mapElement.current, { zoomControl: false, scrollWheelZoom: true, minZoom: 3, maxZoom: 19, attributionControl: true, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false });
       map.current = instance;
       instance.setView([0, 0], 3);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -43,7 +43,7 @@ export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelec
       observer.observe(mapElement.current);
       setReady(true);
     }).catch(() => { if (!cancelled) setError(true); });
-    return () => { cancelled = true; observer?.disconnect(); map.current?.remove(); map.current = null; fitted.current = ""; };
+    return () => { cancelled = true; observer?.disconnect(); map.current?.stop(); map.current?.remove(); map.current = null; fitted.current = ""; };
   }, []);
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export function HospitalPickerMap({ userLocation, hospitals, selectedId, onSelec
       <div className="transport-map-key"><i /> Patient pickup <span /> <b>+</b> Hospital</div>
     </div>
     <div className="transport-map-details">
-      <div className="transport-journey"><div className="transport-journey-track"><i /><span /><b /></div><div><div><small>PICKUP</small><strong>Patient location</strong></div><div><small>{selected ? "DESTINATION" : "DESTINATION · SELECT A HOSPITAL"}</small><strong>{selected?.name ?? "Where should the patient go?"}</strong>{selected?.address && <p>{selected.address}</p>}</div></div>{selected && <ArrowUpRight size={21} className="transport-journey-arrow" />}</div>
+      <div className="transport-journey"><div className="transport-journey-track"><i /><span /><b /></div><div><div><small>PICKUP</small><strong>{pickupLabel}</strong></div><div><small>{selected ? "DESTINATION" : "DESTINATION · SELECT A HOSPITAL"}</small><strong>{selected?.name ?? "Where should the patient go?"}</strong>{selected?.address && <p>{selected.address}</p>}</div></div>{selected && <ArrowUpRight size={21} className="transport-journey-arrow" />}</div>
       {hospitals.length > 0 && <div className="transport-facilities" aria-label="Choose receiving hospital">{hospitals.map((hospital) => <button key={hospital.id} type="button" aria-pressed={hospital.id === selectedId} className={`transport-facility${hospital.id === selectedId ? " is-selected" : ""}`} onClick={() => onSelect(hospital)}><span className="transport-facility-icon"><Hospital size={20} /></span><span><strong>{hospital.name}</strong><small>{hospital.available_beds == null ? "Availability unknown" : `${hospital.available_beds} ${careLevel} bed${hospital.available_beds === 1 ? "" : "s"} available`}{hospital.distance_km != null ? ` · ${hospital.distance_km.toFixed(1)} km away` : ""}</small></span><span className="transport-facility-check">{hospital.id === selectedId && <Check size={13} />}</span></button>)}</div>}
     </div>
   </section>;

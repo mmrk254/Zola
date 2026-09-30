@@ -4,6 +4,8 @@ import { requireAuthenticatedUser, resolveActingHospital } from "@/lib/auth";
 import { CareLevel, CapacitySnapshot, FacilityStatus } from "@/lib/types";
 
 const CARE_LEVELS: CareLevel[] = ["ICU", "HDU", "NICU"];
+export const dynamic = "force-dynamic";
+const FRESH = { "Cache-Control": "private, no-store, max-age=0" };
 
 type CapacityRow = {
   hospital_id: string;
@@ -49,7 +51,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .eq("hospital_id", id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ capacity: formatCapacity((data ?? []) as CapacityRow[], id) });
+    return NextResponse.json({ capacity: formatCapacity((data ?? []) as CapacityRow[], id) }, { headers: FRESH });
   } catch (error: any) {
     return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
   }
@@ -63,6 +65,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const body = await request.json();
     const incoming = Array.isArray(body.capacity) ? body.capacity : [];
+    if (incoming.length !== CARE_LEVELS.length || CARE_LEVELS.some(level => incoming.filter((row: CapacitySnapshot) => row.care_level === level).length !== 1) || incoming.some((row: CapacitySnapshot) => !Number.isSafeInteger(row.available_beds) || row.available_beds < 0 || !["open", "at_capacity", "closed"].includes(row.facility_status) || (row.hospital_id && row.hospital_id !== id))) {
+      return NextResponse.json({ error: "Supply ICU, HDU and NICU capacity for this hospital, using non-negative whole bed counts and valid statuses." }, { status: 400 });
+    }
 
     const rows = CARE_LEVELS.map((level) => {
       const item = incoming.find((row: CapacitySnapshot) => row.care_level === level);
@@ -87,7 +92,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .select("hospital_id, care_level, available_beds, facility_status, updated_at");
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ capacity: formatCapacity((data ?? []) as CapacityRow[], id) });
+    return NextResponse.json({ capacity: formatCapacity((data ?? []) as CapacityRow[], id) }, { headers: FRESH });
   } catch (error: any) {
     return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
   }
