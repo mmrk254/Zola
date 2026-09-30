@@ -17,7 +17,7 @@ export function SessionControls({
     if (signingOut) return;
     setSigningOut(true);
     try {
-      await supabase?.auth.signOut();
+      await supabase?.auth.signOut({ scope: "local" });
     } finally {
       window.location.assign(redirectTo);
     }

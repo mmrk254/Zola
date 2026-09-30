@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase/client";
 
 export type WorkspaceMembership = {
   hospital_id: string;
@@ -33,8 +33,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<WorkspaceSession | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [activeHospitalId, setActiveHospitalIdState] = useState<string | null>(null);
+  const requestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
+    const version = ++requestVersion.current;
     if (!isSupabaseConfigured) {
       setSession(null);
       setLoading(false);
@@ -42,12 +44,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const res = await fetch("/api/me");
+      // Wait for stored-session recovery before requesting protected data.
+      await supabase?.auth.getSession();
+      const res = await fetch("/api/me", { cache: "no-store" });
+      if (version !== requestVersion.current) return;
       if (!res.ok) {
-        setSession(null);
+        if (res.status === 401) { setSession(null); setActiveHospitalIdState(null); }
         return;
       }
       const data = await res.json();
+      if (version !== requestVersion.current) return;
       setSession(data);
 
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -61,14 +67,32 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setActiveHospitalIdState(null);
       }
     } catch {
-      setSession(null);
+      // Preserve the current workspace during temporary connection failures.
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     void refresh();
+    const resume = () => { if (document.visibilityState === "visible") void refresh(); };
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const subscription = supabase?.auth.onAuthStateChange(event => {
+      if (event === "SIGNED_OUT") { ++requestVersion.current; setSession(null); setActiveHospitalIdState(null); setLoading(false); }
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        clearTimeout(timer);
+        // Run outside the auth callback lock.
+        timer = setTimeout(() => void refresh(), 0);
+      }
+    });
+    return () => {
+      clearTimeout(timer);
+      subscription?.data.subscription.unsubscribe();
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [refresh]);
 
   const setActiveHospitalId = useCallback((id: string) => {

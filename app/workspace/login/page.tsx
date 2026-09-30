@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { HospitalAuthLayout } from "@/components/hospital-auth-layout";
 import { supabase } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/supabase/session-options";
 
 export default function WorkspaceLoginPage() {
   const [email, setEmail] = useState("");
@@ -36,13 +37,16 @@ export default function WorkspaceLoginPage() {
     const data = await verify.json();
 
     if (!verify.ok) {
-      await supabase.auth.signOut();
+      if (verify.status === 403) {
+        window.location.assign("/home");
+        return;
+      }
       setError(data.error ?? "Hospital administrator access only.");
       setLoading(false);
       return;
     }
 
-    window.location.assign("/home");
+    window.location.assign(safeNextPath(new URLSearchParams(window.location.search).get("next")));
   }
 
   return (

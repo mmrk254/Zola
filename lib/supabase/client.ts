@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+import { SESSION_COOKIE_OPTIONS } from "./session-options";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
@@ -20,7 +21,7 @@ const hasValidConfig = isValidSupabaseUrl(url) && Boolean(anonKey);
 // The browser client persists the session in cookies so Next.js middleware and
 // server routes see the same authenticated user after sign-in.
 export const supabase = hasValidConfig
-  ? createBrowserClient(url!, anonKey!, { auth: { persistSession: true, autoRefreshToken: true } })
+  ? createBrowserClient(url!, anonKey!, { cookieOptions: SESSION_COOKIE_OPTIONS, auth: { persistSession: true, autoRefreshToken: true } })
   : null;
 
 export const isSupabaseConfigured = hasValidConfig;

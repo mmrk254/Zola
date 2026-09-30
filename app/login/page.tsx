@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { StaffAuthLayout } from "@/components/staff-auth-layout";
 import { supabase } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/supabase/session-options";
 
 function StaffLoginForm() {
   const searchParams = useSearchParams();
@@ -41,15 +42,13 @@ function StaffLoginForm() {
       me?.memberships?.some((m: { role: string; status: string }) => m.role === "hospital_admin" && m.status === "active");
 
     if (isHospitalAdmin) {
-      await supabase.auth.signOut();
-      setError("Hospital administrator accounts must sign in through the hospital workspace, not staff sign-in.");
-      setLoading(false);
+      window.location.assign(safeNextPath(searchParams.get("next")));
       return;
     }
 
     const requestedNext = searchParams.get("next");
-    if (requestedNext?.startsWith("/")) {
-      window.location.assign(requestedNext);
+    if (requestedNext) {
+      window.location.assign(safeNextPath(requestedNext));
       return;
     }
 
