@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Building2, Stethoscope } from "lucide-react";
 import { ZolaLogo } from "@/components/zola-logo";
 
 export default function Home() {
@@ -16,18 +16,22 @@ export default function Home() {
           <p className="marketing-eyebrow">
             <span className="live-dot" /> Critical care coordination · Kenya
           </p>
-          <h1>Find the right bed, in time.</h1>
+          <h1>What would you like to do?</h1>
           <p className="landing-simple-lede">
-            Zola connects care teams to ICU, HDU, and NICU beds across Kenya&apos;s hospital network.
+            Choose how you want to use Zola. You can sign in or create an account in the next step.
           </p>
         </div>
 
         <div className="landing-simple-actions">
           <Link href="/login?next=/home" className="button landing-cta">
-            Create a referral <ArrowRight size={17} />
+            <Stethoscope size={17} />
+            <span>Create a referral<small>For clinical staff coordinating patient care</small></span>
+            <ArrowRight size={17} />
           </Link>
           <Link href="/workspace/login" className="button ghost landing-cta">
-            Open workspace <ArrowRight size={17} />
+            <Building2 size={17} />
+            <span>Manage a hospital<small>For hospital administrators and their teams</small></span>
+            <ArrowRight size={17} />
           </Link>
         </div>
 
