@@ -25,6 +25,8 @@ function NewReferralForm() {
   const preHospitalId = searchParams.get("hospital_id");
   const preHospitalName = searchParams.get("hospital_name");
   const prePatientLocation = searchParams.get("patient_location");
+  const preAmbulanceChoice = searchParams.get("ambulance_needed");
+  const ambulanceNeeded = preAmbulanceChoice === "true" ? true : preAmbulanceChoice === "false" ? false : null;
   const isBroadcast = searchParams.get("broadcast") === "true";
 
   const [consent, setConsent] = useState([false, false, false, false]);
@@ -83,6 +85,7 @@ function NewReferralForm() {
           care_level: form.care_level,
           urgency: form.urgency,
           clinical_summary: form.clinical_summary,
+          ambulance_needed: ambulanceNeeded,
           transfer_mode: isBroadcast ? "external" : isTargeted ? "targeted" : "external",
           patient_location: form.patient_location.trim(),
           receiving_facility_id: isTargeted ? preHospitalId : null,
@@ -151,6 +154,7 @@ function NewReferralForm() {
                   preHospitalName && <span className="chip">{preHospitalName}</span>
                 )}
                 {form.patient_location && <span className="chip">{form.patient_location}</span>}
+                {ambulanceNeeded !== null && <span className="chip">Ambulance {ambulanceNeeded ? "needed" : "not needed"}</span>}
               </div>
             </section>
           )}

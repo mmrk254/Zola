@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Activity, ArrowRight, Baby, Building2, HeartPulse, Hospital, Loader2, MapPin, Navigation, Phone, RefreshCw, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { HospitalPickerMap, MapHospital } from "@/components/hospital-picker-map";
@@ -20,6 +21,7 @@ const BED_OPTIONS = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
   const { session, loading: workspaceLoading, activeHospitalId } = useWorkspace();
   const [step, setStep] = useState<Step>("bed");
   const [selectedBed, setSelectedBed] = useState<CareLevel | null>(null);
@@ -126,6 +128,17 @@ export default function HomePage() {
   function chooseOrigin(type: "onsite" | "offsite") {
     setOriginType(type); setPatient(type === "onsite" ? facility : null); setSelectedId(null); setAmbulanceNeeded(null); setError(null);
   }
+  function continueWithoutCalling() {
+    if (!selectedHospital || !patient || !selectedBed || (originType === "offsite" && ambulanceNeeded === null)) return;
+    const params = new URLSearchParams({
+      care_level: selectedBed,
+      patient_location: patient.name,
+      hospital_id: selectedHospital.id,
+      hospital_name: selectedHospital.name,
+    });
+    if (originType === "offsite") params.set("ambulance_needed", String(ambulanceNeeded));
+    router.push(`/referrals/new?${params.toString()}`);
+  }
   const firstName = session?.user.name?.trim().split(" ")[0];
   const flow = <>
     <div className="uber-flow uber-flow-wide">
@@ -153,6 +166,8 @@ export default function HomePage() {
           <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Road route is not available yet."}</small></div></div>
           {originType === "offsite" && <section className="ambulance-question" aria-labelledby="ambulance-question-title"><div><strong id="ambulance-question-title">Does the patient need an ambulance?</strong><small>Ask {selectedHospital.name} about transport when you call.</small></div><div className="ambulance-options"><button type="button" aria-pressed={ambulanceNeeded === true} className={ambulanceNeeded === true ? "selected" : ""} onClick={() => setAmbulanceNeeded(true)}>Yes</button><button type="button" aria-pressed={ambulanceNeeded === false} className={ambulanceNeeded === false ? "selected" : ""} onClick={() => setAmbulanceNeeded(false)}>No</button></div></section>}
           <div className="selected-hospital-contact"><span className="selected-hospital-icon"><Hospital size={19} /></span><div className="selected-hospital-copy"><strong>{selectedHospital.name}</strong><small>{selectedHospital.phone ? selectedHospital.phone : "This hospital has not added a phone number yet."}</small></div>{selectedHospital.phone ? <a className="button" href={`tel:${selectedHospital.phone.replace(/[^\d+]/g, "")}`}><Phone size={16} /> Call hospital</a> : <span className="contact-unavailable">Call option unavailable</span>}</div>
+          <button type="button" className="button ghost continue-without-call" disabled={originType === "offsite" && ambulanceNeeded === null} onClick={continueWithoutCalling}>Continue without calling <ArrowRight size={17} /></button>
+          {originType === "offsite" && ambulanceNeeded === null && <small className="ambulance-answer-hint">Choose Yes or No above to continue.</small>}
         </>}
         {!selectedHospital && <p className="hospital-selection-hint"><Hospital size={16} /> Select a hospital on the map or in the list to see its call option.</p>}
       </section>}

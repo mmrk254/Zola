@@ -160,7 +160,10 @@ export async function POST(request: NextRequest) {
     from_status: null,
     to_status: "draft",
     actor_user_id: context!.user.id,
-    facility_id: actingHospitalId
+    facility_id: actingHospitalId,
+    notes: typeof body.ambulance_needed === "boolean"
+      ? `Ambulance needed: ${body.ambulance_needed ? "Yes" : "No"}.`
+      : null
   });
 
   return NextResponse.json({ referral }, { status: 201 });
