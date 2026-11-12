@@ -5,7 +5,7 @@ import { ArrowUpRight, Check, Crosshair, Hospital, Minus, Navigation, Plus } fro
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-export type MapHospital = { id: string; name: string; latitude: number; longitude: number; address?: string | null; distance_km?: number; available_beds?: number };
+export type MapHospital = { id: string; name: string; latitude: number; longitude: number; address?: string | null; phone?: string | null; distance_km?: number; available_beds?: number };
 type Coordinates = { latitude: number; longitude: number };
 type Props = { userLocation: Coordinates; hospitals: MapHospital[]; selectedId?: string | null; onSelect: (hospital: MapHospital) => void; careLevel: string; routeCoordinates?: Coordinates[]; pickupLabel?: string };
 const EMPTY_ROUTE: Coordinates[] = [];

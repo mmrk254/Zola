@@ -7,7 +7,6 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  ClipboardPlus,
   Navigation,
   Menu,
   Plus,
@@ -22,7 +21,7 @@ import { ThemeSelector } from "@/components/theme-selector";
 import { useWorkspace } from "@/lib/use-workspace";
 
 const NAV_ITEMS = [
-  { href: "/home", label: "New referral", icon: ClipboardPlus },
+  { href: "/home", label: "Find a hospital", icon: Navigation },
   { href: "/dashboard", label: "Dashboard", icon: Navigation }
 ];
 

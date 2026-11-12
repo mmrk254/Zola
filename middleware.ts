@@ -5,8 +5,10 @@ import { SESSION_COOKIE_OPTIONS, safeNextPath } from "@/lib/supabase/session-opt
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const path = request.nextUrl.pathname;
-  const entryPage = ["/", "/login", "/workspace", "/workspace/login"].includes(path);
+  const entryPage = ["/login", "/workspace", "/workspace/login"].includes(path);
+  const publicPage = path === "/" || path === "/home";
   const isApi = path.startsWith("/api/");
+  const publicHospitalSearch = path === "/api/hospitals/nearby" && request.method === "GET";
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
@@ -19,6 +21,7 @@ export async function middleware(request: NextRequest) {
   const unavailable = () => finish(isApi
     ? NextResponse.json({ error: "Connection unavailable. Please retry." }, { status: 503, headers: { "Retry-After": "5" } })
     : new NextResponse('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="5"><title>Reconnecting to Zola</title></head><body style="font:16px system-ui;max-width:440px;margin:15vh auto;padding:24px"><h1>Reconnecting to Zola</h1><p>We could not verify your session right now. This page will retry automatically.</p><p>You do not need to sign in again for a temporary connection problem.</p><button onclick="location.reload()">Try again</button></body></html>', { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" } }));
+  if (publicPage || publicHospitalSearch) return finish();
   if (!url || !/^https?:\/\//.test(url) || !key) return entryPage ? finish() : unavailable();
 
   const supabase = createServerClient(url, key, {

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Activity, ArrowRight, Baby, Building2, HeartPulse, Loader2, MapPin, Navigation, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowRight, Baby, Building2, HeartPulse, Hospital, Loader2, MapPin, Navigation, Phone, RefreshCw, Search } from "lucide-react";
 import { Shell } from "@/components/shell";
-import { FacilityRequiredNotice } from "@/components/facility-selector";
 import { HospitalPickerMap, MapHospital } from "@/components/hospital-picker-map";
 import { PatientLocationPicker, PatientPlace } from "@/components/patient-location-picker";
+import { ZolaLogo } from "@/components/zola-logo";
 import { CareLevel } from "@/lib/types";
 import { useWorkspace } from "@/lib/use-workspace";
 
@@ -20,8 +20,7 @@ const BED_OPTIONS = [
 ];
 
 export default function HomePage() {
-  const router = useRouter();
-  const { session, activeHospitalId } = useWorkspace();
+  const { session, loading: workspaceLoading, activeHospitalId } = useWorkspace();
   const [step, setStep] = useState<Step>("bed");
   const [selectedBed, setSelectedBed] = useState<CareLevel | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -34,16 +33,24 @@ export default function HomePage() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
-  const [continuing, setContinuing] = useState(false);
+  const [ambulanceNeeded, setAmbulanceNeeded] = useState<boolean | null>(null);
   const [route, setRoute] = useState<{ distance: string; duration: string } | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<Coordinates[]>([]);
   const hospitalRequest = useRef<AbortController | null>(null);
   const selectedHospital = hospitals.find(h => h.id === selectedId) ?? null;
 
   useEffect(() => {
+    const careLevel = new URLSearchParams(window.location.search).get("care_level");
+    if (careLevel && ["ICU", "HDU", "NICU"].includes(careLevel)) {
+      setSelectedBed(careLevel as CareLevel);
+      setStep("location");
+    }
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     setFacility(null); setFacilityError(null); setPatient(null); setOriginType(null);
-    setSelectedId(null); setHospitals([]); setCheckedAt(null);
+    setSelectedId(null); setHospitals([]); setCheckedAt(null); setAmbulanceNeeded(null);
     setStep(current => current === "bed" ? "bed" : "location");
     if (!activeHospitalId) { setFacilityLoading(false); return; }
     setFacilityLoading(true);
@@ -114,54 +121,43 @@ export default function HomePage() {
 
   function selectBed(level: CareLevel) {
     setSelectedBed(level); setSelectedId(null); setHospitals([]); setCheckedAt(null); setError(null);
-    setPatient(null); setOriginType(null); setStep("location");
+    setPatient(null); setOriginType(null); setAmbulanceNeeded(null); setStep("location");
   }
   function chooseOrigin(type: "onsite" | "offsite") {
-    setOriginType(type); setPatient(type === "onsite" ? facility : null); setSelectedId(null); setError(null);
-  }
-  async function continueToReferral(broadcast = false) {
-    if (!patient || !selectedBed || continuing) return;
-    const params = new URLSearchParams({ care_level: selectedBed, patient_location: patient.name });
-    if (broadcast) params.set("broadcast", "true");
-    else {
-      if (!selectedId) return;
-      setContinuing(true);
-      const fresh = await loadHospitals();
-      setContinuing(false);
-      if (!fresh) return;
-      const destination = fresh.find(h => h.id === selectedId);
-      if (!destination) { setError("That hospital no longer has open beds for this care level. Please choose another hospital."); return; }
-      params.set("hospital_id", destination.id); params.set("hospital_name", destination.name);
-    }
-    router.push(`/referrals/new?${params.toString()}`);
+    setOriginType(type); setPatient(type === "onsite" ? facility : null); setSelectedId(null); setAmbulanceNeeded(null); setError(null);
   }
   const firstName = session?.user.name?.trim().split(" ")[0];
-  return <Shell title={firstName ? `Hello, ${firstName}` : "New referral"}>
-    <FacilityRequiredNotice />
-    <div className={`uber-flow ${step !== "bed" ? "uber-flow-wide" : ""}`}>
-      {step !== "bed" && <><button type="button" className="uber-back" disabled={continuing} onClick={() => { setStep(step === "hospitals" ? "location" : "bed"); setSelectedId(null); setError(null); }}>← Back</button><div className="referral-progress" aria-label="Referral steps"><span>1 · {selectedBed}</span><span className={step === "location" ? "active" : ""}>2 · Patient location</span><span className={step === "hospitals" ? "active" : ""}>3 · Hospital</span></div></>}
-      {step === "bed" && <section className="uber-step"><div className="uber-prompt"><Search size={22} /><h2>What does the patient need?</h2><p>Select the care level, confirm the patient location, then find a receiving hospital.</p></div><div className="bed-options">{BED_OPTIONS.map(opt => <button key={opt.level} type="button" className="bed-option" onClick={() => selectBed(opt.level)}><span className="bed-option-icon"><opt.icon size={24} /></span><div><strong>{opt.level}</strong><small>{opt.description}</small></div><ArrowRight size={18} className="bed-option-arrow" /></button>)}</div></section>}
+  const flow = <>
+    <div className="uber-flow uber-flow-wide">
+      {step !== "bed" && <><button type="button" className="uber-back" onClick={() => { setStep(step === "hospitals" ? "location" : "bed"); setSelectedId(null); setAmbulanceNeeded(null); setError(null); }}>← Back</button><div className="referral-progress" aria-label="Care search steps"><span>1 · {selectedBed ?? "Care level"}</span><span className={step === "location" ? "active" : ""}>2 · Patient location</span><span className={step === "hospitals" ? "active" : ""}>3 · Hospital</span></div></>}
+      {step === "bed" && <section className="uber-step"><div className="uber-prompt"><Search size={22} /><h2>What do you need?</h2><p>Choose a care level, then share the patient’s pickup location to find nearby hospitals.</p></div><div className="bed-options">{BED_OPTIONS.map(opt => <button key={opt.level} type="button" className="bed-option" onClick={() => selectBed(opt.level)}><span className="bed-option-icon"><opt.icon size={24} /></span><div><strong>{opt.level}</strong><small>{opt.description}</small></div><ArrowRight size={18} className="bed-option-arrow" /></button>)}</div></section>}
       {step === "location" && <section className="uber-step"><div className="uber-prompt"><MapPin size={22} /><h2>Where is the patient?</h2><p>We’ll find {selectedBed} beds near the patient’s pickup location.</p></div>
         <div className="origin-options">
           <button type="button" aria-pressed={originType === "onsite"} disabled={!facility || facilityLoading} onClick={() => chooseOrigin("onsite")}><Building2 size={19} /><span><strong>Patient is on site</strong><small>{facilityLoading ? "Loading hospital location…" : facility?.name ?? "Hospital location unavailable"}</small></span></button>
           <button type="button" aria-pressed={originType === "offsite"} onClick={() => chooseOrigin("offsite")}><MapPin size={19} /><span><strong>Patient is off site</strong><small>Find the patient on the map.</small></span></button>
         </div>
-        {!activeHospitalId && <p className="notice">Select your referring facility to use its on-site location.</p>}
+        {!activeHospitalId && session && <p className="notice">Select “Patient is off site” to choose the pickup location on the map.</p>}
+        {!session && <p className="notice">Choose “Patient is off site” to search, pin, or use the patient’s current location.</p>}
         {facilityError && <p className="notice" role="status">{facilityError}</p>}
         {originType === "onsite" && patient && <div className="pickup-confirmation"><Building2 size={22} /><div><strong>{patient.name}</strong><small>Pickup is at your hospital’s saved location.</small></div></div>}
         {originType === "offsite" && <PatientLocationPicker initialCenter={facility} value={patient} onChange={setPatient} />}
-        <button className="button uber-continue" type="button" disabled={!patient} onClick={() => { setHospitals([]); setCheckedAt(null); setStep("hospitals"); }}>Find {selectedBed} beds <ArrowRight size={17} /></button>
+        <button className="button uber-continue" type="button" disabled={!patient} onClick={() => { setHospitals([]); setCheckedAt(null); setSelectedId(null); setAmbulanceNeeded(null); setStep("hospitals"); }}>Find {selectedBed} beds <ArrowRight size={17} /></button>
       </section>}
       {step === "hospitals" && patient && selectedBed && <section className="uber-step"><div className="uber-prompt"><Navigation size={22} /><h2>{selectedBed} beds near the patient</h2><p>Choose the receiving hospital. Distances start at the patient’s pickup.</p></div>
-        <div className="availability-toolbar"><span role="status">{loadingHospitals ? "Checking availability…" : checkedAt ? `Checked ${checkedAt} · refreshes every 15 seconds` : "Checking available beds"}</span><button type="button" onClick={() => void loadHospitals()} disabled={loadingHospitals || continuing}><RefreshCw size={14} /> Refresh</button></div>
+        <div className="availability-toolbar"><span role="status">{loadingHospitals ? "Checking availability…" : checkedAt ? `Checked ${checkedAt} · refreshes every 15 seconds` : "Checking available beds"}</span><button type="button" onClick={() => void loadHospitals()} disabled={loadingHospitals}><RefreshCw size={14} /> Refresh</button></div>
         {error && <div className="notice error" role="alert">{error}</div>}
         {!checkedAt && loadingHospitals && <div className="uber-loading"><Loader2 className="spin" size={22} /> Finding hospitals…</div>}
-        {checkedAt && <HospitalPickerMap userLocation={patient} pickupLabel={patient.name} hospitals={hospitals} careLevel={selectedBed} selectedId={selectedId} onSelect={h => { if (!continuing) setSelectedId(h.id); }} routeCoordinates={routeCoordinates} />}
-        {checkedAt && hospitals.length === 0 && <p className="notice">No open {selectedBed} beds are available right now. Refresh or use general broadcast.</p>}
-        {selectedHospital && <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Road route is not available yet."}</small></div></div>}
-        <button type="button" className="button uber-continue" disabled={!selectedHospital || continuing || loadingHospitals || !!error} onClick={() => void continueToReferral()}>{continuing ? "Checking beds…" : selectedHospital ? `Continue with ${selectedHospital.name}` : "Select a hospital to continue"}<ArrowRight size={17} /></button>
-        <button type="button" className="general-broadcast-link" disabled={continuing} onClick={() => void continueToReferral(true)}>Use general broadcast instead</button>
+        {checkedAt && <HospitalPickerMap userLocation={patient} pickupLabel={patient.name} hospitals={hospitals} careLevel={selectedBed} selectedId={selectedId} onSelect={h => { setSelectedId(h.id); setAmbulanceNeeded(null); }} routeCoordinates={routeCoordinates} />}
+        {checkedAt && hospitals.length === 0 && <p className="notice">No open {selectedBed} beds are available right now. Refresh to check again later.</p>}
+        {selectedHospital && <>
+          <div className="route-summary"><Navigation size={18} /><div><strong>Patient transport route</strong><small>{route ? `${route.distance} by road · estimated ${route.duration}` : "Road route is not available yet."}</small></div></div>
+          {originType === "offsite" && <section className="ambulance-question" aria-labelledby="ambulance-question-title"><div><strong id="ambulance-question-title">Does the patient need an ambulance?</strong><small>Ask {selectedHospital.name} about transport when you call.</small></div><div className="ambulance-options"><button type="button" aria-pressed={ambulanceNeeded === true} className={ambulanceNeeded === true ? "selected" : ""} onClick={() => setAmbulanceNeeded(true)}>Yes</button><button type="button" aria-pressed={ambulanceNeeded === false} className={ambulanceNeeded === false ? "selected" : ""} onClick={() => setAmbulanceNeeded(false)}>No</button></div></section>}
+          <div className="selected-hospital-contact"><span className="selected-hospital-icon"><Hospital size={19} /></span><div className="selected-hospital-copy"><strong>{selectedHospital.name}</strong><small>{selectedHospital.phone ? selectedHospital.phone : "This hospital has not added a phone number yet."}</small></div>{selectedHospital.phone ? <a className="button" href={`tel:${selectedHospital.phone.replace(/[^\d+]/g, "")}`}><Phone size={16} /> Call hospital</a> : <span className="contact-unavailable">Call option unavailable</span>}</div>
+        </>}
+        {!selectedHospital && <p className="hospital-selection-hint"><Hospital size={16} /> Select a hospital on the map or in the list to see its call option.</p>}
       </section>}
     </div>
-  </Shell>;
+  </>;
+  if (!session && !workspaceLoading) return <main className="finder-public"><div className="finder-public-inner"><header className="finder-public-header"><Link href="/" className="brand" aria-label="Zola home"><ZolaLogo size={22} /></Link><Link href="/workspace/login" className="finder-workspace-link"><Building2 size={15} /> Hospital workspace</Link></header>{flow}</div></main>;
+  return <Shell title={firstName ? `Hello, ${firstName}` : "Find a hospital"}>{flow}</Shell>;
 }

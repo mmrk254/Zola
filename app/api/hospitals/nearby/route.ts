@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
 import { haversineKm } from "@/lib/geolocation";
 import { demoHospitals, demoCapacity } from "@/lib/demo-data";
 import { CareLevel } from "@/lib/types";
@@ -14,18 +13,13 @@ export type NearbyHospital = {
   address: string | null;
   latitude: number;
   longitude: number;
+  phone: string | null;
   distance_km: number;
   available_beds: number;
   facility_status: string;
 };
 
 export async function GET(request: NextRequest) {
-  try {
-    await requireAuthenticatedUser();
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message ?? "Unauthorized" }, { status: 401 });
-  }
-
   const lat = parseFloat(request.nextUrl.searchParams.get("lat") ?? "");
   const lng = parseFloat(request.nextUrl.searchParams.get("lng") ?? "");
   const careLevel = request.nextUrl.searchParams.get("care_level") as CareLevel | null;
@@ -49,7 +43,7 @@ export async function GET(request: NextRequest) {
 
   const { data: hospitals, error: hospError } = await supabase
     .from("hospitals")
-    .select("id, name, address, latitude, longitude")
+    .select("id, name, address, latitude, longitude, contact_info, alert_phone")
     .not("latitude", "is", null)
     .not("longitude", "is", null);
 
@@ -82,6 +76,7 @@ export async function GET(request: NextRequest) {
         address: h.address,
         latitude: h.latitude!,
         longitude: h.longitude!,
+        phone: usablePhone(h.contact_info) ?? usablePhone(h.alert_phone),
         distance_km,
         available_beds: cap.available_beds,
         facility_status: cap.facility_status
@@ -107,6 +102,7 @@ function buildNearbyFromDemo(lat: number, lng: number, careLevel: CareLevel): Ne
         address: h.address ?? null,
         latitude: h.latitude!,
         longitude: h.longitude!,
+        phone: usablePhone(h.contact_info),
         distance_km,
         available_beds: cap?.available_beds ?? 0,
         facility_status: cap?.facility_status ?? "closed"
@@ -114,4 +110,10 @@ function buildNearbyFromDemo(lat: number, lng: number, careLevel: CareLevel): Ne
     })
     .filter((h) => h.available_beds > 0 && h.facility_status === "open")
     .sort((a, b) => a.distance_km - b.distance_km);
+}
+
+function usablePhone(value: string | null | undefined): string | null {
+  const phone = value?.trim();
+  if (!phone || phone.includes("@") || phone.replace(/\D/g, "").length < 7) return null;
+  return phone;
 }
