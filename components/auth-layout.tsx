@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, Building2, Stethoscope } from "lucide-react";
+import { Building2, Stethoscope } from "lucide-react";
+import { ZolaLogo } from "@/components/zola-logo";
 
 export function AuthLayout({
   children,
@@ -18,7 +19,7 @@ export function AuthLayout({
     <main className="auth-shell">
       <section className="auth-visual">
         <Link href="/" className="auth-visual-brand">
-          <Activity size={18} /> ZOLA
+          <ZolaLogo size={22} />
         </Link>
         <div className="auth-visual-copy">
           <p>

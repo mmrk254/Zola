@@ -6,12 +6,12 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Zola",
     description: "Real-time ICU, HDU, and NICU referral coordination for hospitals.",
     id: "/",
-    start_url: "/home",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#F7F3EB",
-    theme_color: "#0F8D8A",
+    theme_color: "#0D918D",
     categories: ["medical", "health", "productivity"],
     icons: [
       {
@@ -27,7 +27,7 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any"
       },
       {
-        src: "/icons/icon-512.png",
+        src: "/icons/icon-maskable-512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable"

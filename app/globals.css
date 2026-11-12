@@ -627,6 +627,7 @@ input:disabled, select:disabled, textarea:disabled { background: var(--cream-war
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: #f4f0e8; }
 .auth-visual { position: relative; padding: 36px; background: linear-gradient(145deg, #6b7fd7 0%, #8b6fd1 48%, #7a8be8 100%); color: #fff; overflow: hidden; display: flex; flex-direction: column; }
 .auth-visual-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .12em; color: #fff; }
+.auth-visual-brand .zola-logo-wordmark { color: #fff; }
 .auth-visual-copy { margin-top: auto; margin-bottom: auto; max-width: 360px; }
 .auth-visual-copy p { margin: 0; font-size: 22px; line-height: 1.45; font-family: var(--font-display); font-weight: 500; }
 .auth-visual-art { position: relative; height: 220px; margin-top: 24px; }
@@ -1019,6 +1020,7 @@ body {
   max-width: 100%;
 }
 .zola-logo svg { flex-shrink: 0; display: block; }
+.zola-logo-wordmark { color: #252d39; font-family: Arial, Helvetica, sans-serif; font-weight: 800; letter-spacing: .1em; line-height: 1; }
 
 .table-wrap {
   width: 100%;
